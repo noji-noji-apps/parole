@@ -3519,7 +3519,7 @@ const LS = {
 };
 
 /* 日付（午前4時で1日が切り替わる） */
-const DAY = 864e5, CUT = 4 * 3600e3;
+const DAY = 864e5, CUT = 0;   // 1日の区切り（0 = 深夜0時）
 function dayOf(ts){ const d = new Date(ts - CUT); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / DAY); }
 function today(){ return dayOf(Date.now()); }
 function dayLabel(n){
@@ -3917,12 +3917,28 @@ function audioVoiceList(){
   const v = Array.isArray(settings.audioVoices) ? settings.audioVoices.filter(k => AUDIO_VOICES[k]) : [];
   return v.length ? Object.keys(AUDIO_VOICES).filter(k => v.includes(k)) : Object.keys(AUDIO_VOICES);
 }
-function audioVoice(){ const l = audioVoiceList(); return l[(voiceTurn++) % l.length]; }
+/* 声ごとに録音が届くかを最初に確かめる。届かない声は使わず、端末の読み上げにすぐ切り替える
+   （あとから切り替えると、iPhone ではタップの直後でないため音が出ないことがある） */
+const audioOK = {};   // 声 → true（使える）/ false（使えない）/ undefined（確認中）
+function probeAudio(){
+  const key = audioKey(sayText(VOICE_TEST));
+  Object.keys(AUDIO_VOICES).forEach(v => {
+    fetch(`audio/${v}/${key}.m4a`, {method:'HEAD', cache:'no-store'})
+      .then(r => { audioOK[v] = r.ok; }).catch(() => { audioOK[v] = false; });
+  });
+}
+try{ probeAudio(); }catch(e){}
+/* マナーモードでも鳴るようにする（対応しているブラウザだけ） */
+try{ if(navigator.audioSession) navigator.audioSession.type = 'playback'; }catch(e){}
+function audioVoice(){
+  const l = audioVoiceList().filter(v => audioOK[v] !== false);
+  return l.length ? l[(voiceTurn++) % l.length] : null;
+}
 function playRecorded(text){
   if(typeof Audio === 'undefined') return false;
   if(!audioKeys) audioKeys = new Set(audioTexts().map(audioKey));
   const key = audioKey(text); if(!audioKeys.has(key)) return false;
-  const voice = audioVoice(); if(!AUDIO_VOICES[voice]) return false;
+  const voice = audioVoice(); if(!voice) return false;
   try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
   if(!audioEl){ audioEl = new Audio(); audioEl.preload = 'auto'; }
   const my = ++audioSeq;
@@ -4867,7 +4883,7 @@ function importTexts(texts, mode, names){
 /* ------------------------------------------------------------------ */
 /* GitHub への保存（Gist 同期）                                         */
 /*  学習記録は人ごとに別々の非公開 Gist（parole-<名前>.json）へ保存する。 */
-/*  トークンと名前はこの端末に覚えておき、消えたときだけ聞き直す。        */
+/*  パスワードと名前はこの端末に覚えておき、消えたときだけ聞き直す。        */
 /*  端末の記録と Gist の記録は語ごとに新しいほうを残して合わせるので、    */
 /*  どちらかを丸ごと上書きすることはない（リセットしたときだけ上書き）。  */
 /* ------------------------------------------------------------------ */
@@ -5084,7 +5100,7 @@ const Sync = (() => {
   function statusText(){
     if(!cfg) return '';
     if(state === 'syncing') return '保存しています…';
-    if(state === 'auth') return 'トークンが使えなくなりました。入れ直してください。';
+    if(state === 'auth') return 'パスワードが使えなくなりました。入れ直してください。';
     if(state === 'error') return 'GitHub に接続できませんでした。変更はこの端末に残っていて、次につながったときに保存します。';
     if(meta.dirty) return 'まもなく保存します';
     if(!cfg.lastSync) return '';
@@ -5111,21 +5127,21 @@ const Sync = (() => {
 dataHook = Sync.onSaved;
 
 const SYNC_ERR = {
-  auth: 'トークンが正しくありません。コピーし直して貼り付けてください。',
-  scope: 'このトークンには gist の権限がありません。トークンを作り直すときに「gist」にチェックを入れてください。',
+  auth: 'パスワードが正しくありません。コピーし直して貼り付けてください。',
+  scope: 'このパスワードには gist の権限がありません。パスワードを作り直すときに「gist」にチェックを入れてください。',
   net: 'GitHub に接続できませんでした。通信状況を確かめて、もう一度お試しください。',
   limit: 'GitHub への接続が一時的に制限されています。しばらく待ってからお試しください。'
 };
 function syncErr(e){ return SYNC_ERR[e && e.code] || ('うまくいきませんでした（' + esc(e && e.message) + '）'); }
 
-/* 接続のダイアログ。why: restore（記録が見つからない）/ setup（設定から）/ auth（トークン切れ） */
+/* 接続のダイアログ。why: restore（記録が見つからない）/ setup（設定から）/ auth（パスワード切れ） */
 function openSyncDialog(why, from){
   const c = Sync.cfg();
   const pre = c ? c.name : '';
   const lead = {
-    restore: 'この端末に学習記録が見つかりません。以前 GitHub に保存していた場合は、名前とトークンを入れると元に戻せます。初めて使うときも、ここで保存の設定ができます。',
-    setup: '名前を選んで、GitHub のトークンを貼り付けてください。記録は名前ごとに別々に保存され、相手の記録には触れません。',
-    auth: '保存に使っていたトークンが使えなくなりました。新しいトークンを貼り付けてください。'
+    restore: 'この端末に学習記録が見つかりません。以前 GitHub に保存していた場合は、名前とパスワードを入れると元に戻せます。初めて使うときも、ここで保存の設定ができます。',
+    setup: '名前を選んで、GitHub のパスワードを貼り付けてください。記録は名前ごとに別々に保存され、相手の記録には触れません。',
+    auth: '保存に使っていたパスワードが使えなくなりました。新しいパスワードを貼り付けてください。'
   }[why];
   const bd = openDialog(`
     <b class="dlg-title" id="usheetTitle">学習記録を GitHub に保存</b>
@@ -5133,7 +5149,7 @@ function openSyncDialog(why, from){
     <div class="vlist" role="radiogroup" aria-label="名前">
       ${Object.entries(PEOPLE).map(([k, v]) => `<label class="vopt"><input type="radio" name="syncName" value="${k}" ${pre === k ? 'checked' : ''} ${why === 'auth' && pre !== k ? 'disabled' : ''}><span class="vname">${v}</span></label>`).join('')}
     </div>
-    <label class="small muted" style="display:grid;gap:4px">GitHub のトークン
+    <label class="small muted" style="display:grid;gap:4px">パスワード
       <input type="password" id="syncToken" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_ で始まる文字列">
     </label>
     <div id="syncMsg" class="small" aria-live="polite"></div>
@@ -5144,7 +5160,7 @@ function openSyncDialog(why, from){
     const name = (sheet.querySelector('input[name=syncName]:checked') || {}).value;
     const token = sheet.querySelector('#syncToken').value.trim();
     if(!name){ msg('名前を選んでください。'); return; }
-    if(!token){ msg('トークンを貼り付けてください。'); return; }
+    if(!token){ msg('パスワードを貼り付けてください。'); return; }
     const go = sheet.querySelector('#syncGo'); go.disabled = true; go.textContent = '確認しています…'; msg('');
     let found;
     try{ found = await Sync.inspect(token, name); }
@@ -5190,10 +5206,10 @@ function syncConfirmStep(sheet, token, name, found, why){
     }
   };
 }
-/* ホームの案内：未設定・トークン切れのときだけ出す */
+/* ホームの案内：未設定・パスワード切れのときだけ出す */
 function syncNoticeHtml(){
   const c = Sync.cfg();
-  if(c && Sync.state() === 'auth') return `<div class="notice">GitHub への保存に使うトークンが使えなくなりました。<div class="row" style="margin-top:6px"><button class="btn ink" data-sync-open="auth">トークンを入れ直す</button></div></div>`;
+  if(c && Sync.state() === 'auth') return `<div class="notice">GitHub への保存に使うパスワードが使えなくなりました。<div class="row" style="margin-top:6px"><button class="btn ink" data-sync-open="auth">パスワードを入れ直す</button></div></div>`;
   if(!c && Sync.hasLocal()) return `<div class="notice">学習記録はこのブラウザにしか保存されていません。GitHub に保存しておくと、消えても元に戻せます。<div class="row" style="margin-top:6px"><button class="btn ink" data-sync-open="setup">GitHub への保存を設定</button></div></div>`;
   return '';
 }
@@ -5208,7 +5224,7 @@ function syncSettingsHtml(){
     <p><b>${PEOPLE[c.name]}</b>として GitHub に自動で保存しています<br><span class="muted small" id="syncStatus">${Sync.statusText()}</span></p>
     <div class="row">
       <button class="btn" id="syncNowBtn">今すぐ保存</button>
-      ${Sync.state() === 'auth' ? '<button class="btn ink" data-sync-open="auth">トークンを入れ直す</button>' : ''}
+      ${Sync.state() === 'auth' ? '<button class="btn ink" data-sync-open="auth">パスワードを入れ直す</button>' : ''}
       <button class="btn" id="syncSwitch">${PEOPLE[other]}に切り替える</button>
       <button class="btn ghost danger" id="syncOff">この端末の接続を解除</button>
     </div>
@@ -5234,7 +5250,7 @@ function bindSyncSettings(){
     box.scrollIntoView({block:'nearest'});
   };
   document.getElementById('syncOff').onclick = () => {
-    box.innerHTML = `<div class="notice" style="margin-top:12px"><p>この端末でのGitHubへの保存をやめます。この端末の記録と GitHub の記録はどちらも残ります。もう一度つなぐにはトークンが必要です。</p>
+    box.innerHTML = `<div class="notice" style="margin-top:12px"><p>この端末でのGitHubへの保存をやめます。この端末の記録と GitHub の記録はどちらも残ります。もう一度つなぐにはパスワードが必要です。</p>
       <div class="row"><button class="btn danger" id="offYes">接続を解除</button><button class="btn ghost" id="offNo">やめる</button></div></div>`;
     document.getElementById('offNo').onclick = () => { box.innerHTML = ''; };
     document.getElementById('offYes').onclick = async () => {
