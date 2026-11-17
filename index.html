@@ -3842,16 +3842,19 @@ function loadVoices(){
 /* iPhone の Safari は voiceschanged が来ないことがあるので、少し待って読み直す */
 if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; setTimeout(loadVoices, 600); setTimeout(() => { voicesReady = true; loadVoices(); }, 2500); }
 function voiceState(){ if(!('speechSynthesis' in window)) return 'none'; if(itVoice) return 'ok'; return voicesReady ? 'noit' : 'wait'; }
+/* 声を指定せず、言語だけ伝えて端末に任せる（端末の設定で選んだ声が使われることがある） */
+const SYS_VOICE = '__system';
 const VOICE_HELP = '端末の設定（読み上げ・音声の項目）でイタリア語の音声を追加すると、自然な発音になります。';
 function voiceNoteHtml(where){
   const st = voiceState();
   if(where === 'home'){
-    if(settings.voiceNoteHidden || (st !== 'noit' && st !== 'none')) return '';
+    return '';   /* 内蔵の語は録音した声で読むので、ホームでの案内は出さない */
     return `<div class="notice row" style="flex-wrap:nowrap;align-items:flex-start"><span style="flex:1">${st === 'none'
       ? 'このブラウザは読み上げに対応していないため、発音は再生されません。'
       : 'この端末にはイタリア語の読み上げ音声がありません。別の言語の音声で読むため、発音が不自然になります。' + VOICE_HELP}</span>
       <button class="btn ghost small" data-hide-voice>閉じる</button></div>`;
   }
+  if(st === 'ok' && settings.voiceURI === SYS_VOICE) return `<p class="small">端末の設定で選んだイタリア語の声で読み上げます。</p>`;
   if(st === 'ok') return `<p class="small">イタリア語の音声（${esc(voiceName(itVoice))}）で読み上げます。</p>`;
   if(st === 'wait') return `<p class="small muted">音声を確認しています…</p>`;
   if(st === 'none') return `<div class="notice">このブラウザは読み上げに対応していないため、発音は再生されません。</div>`;
@@ -3859,10 +3862,11 @@ function voiceNoteHtml(where){
 }
 function voicePickHtml(){
   if(!itVoices.length) return '';
-  const cur = settings.voiceURI && itVoices.some(v => v.voiceURI === settings.voiceURI) ? settings.voiceURI : '';
+  const cur = settings.voiceURI === SYS_VOICE ? SYS_VOICE : settings.voiceURI && itVoices.some(v => v.voiceURI === settings.voiceURI) ? settings.voiceURI : '';
   const row = (val, name, q) => `<label class="vopt"><input type="radio" name="voicePick" value="${esc(val)}" ${val === cur ? 'checked' : ''}><span class="vname" lang="it">${name}</span>${q ? `<span class="badge">${q}</span>` : ''}</label>`;
   return `<div class="vlist">
     ${row('', `自動 <span class="muted small">（いちばん高音質な声：${esc(voiceName(itVoices[0]))}）</span>`, '')}
+    ${row(SYS_VOICE, `端末の設定に合わせる <span class="muted small">（読み上げコンテンツで選んだ声）</span>`, '')}
     ${itVoices.map(v => row(v.voiceURI, esc(voiceName(v)), QLABEL[voiceQuality(v)])).join('')}
   </div>`;
 }
@@ -3873,7 +3877,7 @@ function updateVoiceNotes(){
       el.querySelectorAll('input[name=voicePick]').forEach(r => r.onchange = () => {
         settings.voiceURI = r.value; saveSettings();
         itVoice = (r.value && itVoices.find(v => v.voiceURI === r.value)) || itVoices[0] || null;
-        speak('Buongiorno, un caffè per favore.');
+        ttsSpeak('Buongiorno, un caffè per favore.');
         const note = document.querySelector('[data-voice-note="settings"]'); if(note) note.innerHTML = voiceNoteHtml('settings');
       });
       return;
@@ -3883,12 +3887,65 @@ function updateVoiceNotes(){
     if(b) b.onclick = () => { settings.voiceNoteHidden = true; saveSettings(); el.innerHTML = ''; };
   });
 }
+/* 読み上げる文に整える：括弧書きを除き、il/la nipote は「il nipote, la nipote」と読む */
+function sayText(t){
+  t = String(t || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const m = t.match(/^((?:il|lo|la|i|gli|le|un|uno|una|l')(?:\/(?:il|lo|la|i|gli|le|un|uno|una|l'))+)\s+(.+)$/i);
+  if(m) t = m[1].split('/').map(a => a + (a.endsWith("'") ? '' : ' ') + m[2]).join(', ');
+  return t.replace(/\s*\/\s*/g, ', ');
+}
+/* ------------------------------------------------------------------ */
+/* 録音した声（audio/<声>/<キー>.m4a）。内蔵の単語と例文だけにある     */
+/* キーは読み上げる文のハッシュ。Mac で作った音声ファイルと同じ計算をする */
+/* ------------------------------------------------------------------ */
+const AUDIO_VOICES = {federica:'Federica', emma:'Emma', paola:'Paola', luca:'Luca'};
+const VOICE_TEST = 'Buongiorno, un caffè per favore.';
+function fnv32(bytes, h){ for(const b of bytes){ h ^= b; h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+function audioKey(t){
+  const b = new TextEncoder().encode(t);
+  return fnv32(b, 2166136261).toString(36).padStart(7, '0') + fnv32(b, 0x9747b28c).toString(36).padStart(7, '0');
+}
+/* 録音がある文の一覧（内蔵データの見出し語・例文と、試聴の文） */
+function audioTexts(){
+  const set = new Set([sayText(VOICE_TEST)]);
+  BUILTIN.forEach(w => { if(w.it) set.add(sayText(w.it)); if(w.exIt) set.add(sayText(w.exIt)); });
+  return [...set].filter(Boolean);
+}
+let audioKeys = null, audioEl = null, audioSeq = 0, voiceTurn = 0;
+/* 選んだ声（複数可）。読むたびに順番に入れ替わる */
+function audioVoiceList(){
+  const v = Array.isArray(settings.audioVoices) ? settings.audioVoices.filter(k => AUDIO_VOICES[k]) : [];
+  return v.length ? Object.keys(AUDIO_VOICES).filter(k => v.includes(k)) : Object.keys(AUDIO_VOICES);
+}
+function audioVoice(){ const l = audioVoiceList(); return l[(voiceTurn++) % l.length]; }
+function playRecorded(text){
+  if(typeof Audio === 'undefined') return false;
+  if(!audioKeys) audioKeys = new Set(audioTexts().map(audioKey));
+  const key = audioKey(text); if(!audioKeys.has(key)) return false;
+  const voice = audioVoice(); if(!AUDIO_VOICES[voice]) return false;
+  try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(e){}
+  if(!audioEl){ audioEl = new Audio(); audioEl.preload = 'auto'; }
+  const my = ++audioSeq;
+  /* ファイルがない・読めないときは端末の読み上げで代わりに読む */
+  let fell = false;
+  const fallback = () => { if(my === audioSeq && !fell){ fell = true; ttsSpeak(text); } };
+  audioEl.onerror = fallback;
+  audioEl.src = `audio/${voice}/${key}.m4a`;
+  const pr = audioEl.play();
+  if(pr && pr.catch) pr.catch(e => { if(!e || e.name !== 'AbortError') fallback(); });
+  return true;
+}
 function speak(t){
+  const text = sayText(t); if(!text) return;
+  if(!playRecorded(text)) ttsSpeak(text);
+}
+function ttsSpeak(text){
   try{
+    if(audioEl){ audioEl.onerror = null; audioEl.pause(); }
     if(!('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(t.replace(/\([^)]*\)/g, ''));
-    u.lang = 'it-IT'; if(itVoice) u.voice = itVoice; u.rate = .9;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'it-IT'; if(itVoices[0]) u.voice = itVoices[0]; u.rate = .9;   /* 録音がないときだけ使う予備 */
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -4700,10 +4757,12 @@ function renderSettings(msg){
     <h2>音声</h2>
     <label class="toggle"><input type="checkbox" id="autoSpeak" ${settings.autoSpeak ? 'checked' : ''}>
       <span><b>自動で読み上げる</b><span class="muted small">カードの表示時と、解答後に発音を再生します。オフでも発音ボタンで聞けます。</span></span></label>
-    <div data-voice-note="settings" style="margin-top:10px"></div>
-    <div data-voice-note="pick"></div>
-    <p class="muted small">iPhone では「設定 → アクセシビリティ → 読み上げコンテンツ → 声 → イタリア語」から、拡張・プレミアムの声を無料でダウンロードできます。追加したら、このページを開き直すと一覧に出ます。</p>
-    <div class="row"><button class="btn small" id="voiceTest">試しに聞く</button>${settings.voiceNoteHidden ? '<button class="btn ghost small" id="voiceNoteShow">ホームの案内を再表示</button>' : ''}</div>
+    <p style="margin:14px 0 6px"><b>読み上げの声</b></p>
+    <div class="vlist" role="group" aria-label="読み上げの声">
+      ${[['federica','Federica','女性'],['emma','Emma','女性'],['paola','Paola','女性'],['luca','Luca','男性']].map(([v, n, d]) =>
+        `<label class="vopt"><input type="checkbox" name="audioVoice" value="${v}" ${audioVoiceList().includes(v) ? 'checked' : ''}><span class="vname">${n} <span class="muted small">（${d}）</span></span></label>`).join('')}
+    </div>
+    <p class="muted small">選んだ声が、読むたびに順番に入れ替わります。1人だけ選ぶと、いつも同じ声で読みます。</p>
 
     <h2>単語データ</h2>
     <p>内蔵 ${fmt(BUILTIN.length)}語（固定）＋ 自分で追加 ${fmt(userWords.length)}語${overB ? `（うち内蔵語の上書き ${overB}語）` : ''}<br>
@@ -4749,8 +4808,12 @@ function renderSettings(msg){
   document.getElementById('artMode').onchange = e => { settings.artMode = e.target.checked; saveSettings(); };
   document.getElementById('autoSpeak').onchange = e => { settings.autoSpeak = e.target.checked; saveSettings(); };
   if('speechSynthesis' in window) loadVoices();
-  document.getElementById('voiceTest').onclick = () => speak('Buongiorno, un caffè per favore.');
-  const vs = document.getElementById('voiceNoteShow'); if(vs) vs.onclick = () => { settings.voiceNoteHidden = false; saveSettings(); renderSettings(); };
+  main.querySelectorAll('input[name=audioVoice]').forEach(r => r.onchange = () => {
+    const on = [...main.querySelectorAll('input[name=audioVoice]:checked')].map(x => x.value);
+    if(!on.length){ r.checked = true; return; }   /* 最低1人は残す */
+    settings.audioVoices = on; saveSettings();
+    if(r.checked){ voiceTurn = audioVoiceList().indexOf(r.value); speak(VOICE_TEST); }
+  });
   const mode = () => document.getElementById('mode').value;
   document.getElementById('file').onchange = async e => {
     const files = [...e.target.files]; if(!files.length) return;
