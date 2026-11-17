@@ -10,10 +10,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="color-scheme" content="light only">
 <meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400;1,6..96,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..800&display=swap" rel="stylesheet">
 <style>
 :root{
   /* 白基調。差し色は三色旗の緑（verde）と赤（rosso）だけ。文字・罫線は無彩色 */
@@ -30,8 +31,9 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
-/* 端末がダークモードでも白基調のまま表示する */
-:root, :root[data-theme="dark"]{ color-scheme:light; }
+/* ダークモードには対応しない：端末やブラウザの設定に関わらず常に白基調で表示する */
+:root, :root[data-theme="dark"]{ color-scheme:light only; }
+button,input,select,textarea{background-color:var(--sheet);color:var(--text)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--paper);color:var(--text);font:15px/1.65 var(--sans);-webkit-text-size-adjust:100%}
@@ -49,7 +51,7 @@ header::before{content:"";display:block;height:5px;background:linear-gradient(90
 .navbtn[aria-current="page"]{border-color:var(--line);color:var(--text);background:var(--sheet)}
 
 main{max-width:760px;margin:0 auto;padding:18px 16px 60px}
-h2{font-family:var(--head);font-size:1.2rem;margin:30px 0 10px;font-weight:600;color:var(--text);letter-spacing:.02em}
+h2{font-family:var(--head);font-size:1.2rem;margin:30px 0 10px;font-weight:700;color:var(--text);letter-spacing:.02em}
 h2:first-child{margin-top:4px}
 p{margin:0 0 10px}
 .muted{color:var(--muted)}
@@ -109,8 +111,14 @@ select,input[type=text],textarea{background:var(--sheet);border:1px solid var(--
 }
 .flash{min-height:300px;display:flex;flex-direction:column;cursor:pointer;user-select:none;-webkit-user-select:none}
 .flash .front{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:10px 0}
-.it{font-family:var(--serif);font-weight:400;font-size:clamp(2.1rem,8vw,3.4rem);line-height:1.1;color:var(--ink);overflow-wrap:anywhere}
+.it{font-family:var(--serif);font-weight:600;font-size:clamp(2.1rem,8vw,3.4rem);line-height:1.1;color:var(--ink);overflow-wrap:anywhere}
+.flash .front .it{font-size:clamp(2.8rem,12vw,4.4rem);font-weight:700}
 .ja-big{font-size:clamp(1.4rem,5vw,1.9rem);font-weight:600;line-height:1.35}
+/* 日本語の見出し：訳語の区切りでだけ改行し、括弧書きは小さく別の行に。はみ出す訳語だけ縮める */
+.jfit{display:block;width:100%;text-align:center}
+.jc{display:inline-flex;flex-direction:column;align-items:center;vertical-align:top;margin:0 0 .2em;max-width:none}
+.jm{white-space:nowrap}
+.jn{font-size:.58em;font-weight:500;color:var(--muted);white-space:nowrap;line-height:1.35}
 .badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .badge{font-size:.75rem;border:1px solid var(--line);background:var(--sheet);border-radius:6px;padding:1px 8px;color:var(--muted)}
 .badge.m{color:var(--male);border-color:color-mix(in srgb,var(--male) 40%,transparent)}
@@ -121,7 +129,7 @@ select,input[type=text],textarea{background:var(--sheet);border:1px solid var(--
 .field{display:grid;grid-template-columns:4.5em 1fr;gap:10px;font-size:.92rem}
 .field dt{color:var(--muted);font-size:.8rem;padding-top:2px}
 .field dd{margin:0}
-.ex-it{font-family:var(--serif);font-size:1.15rem;line-height:1.4}
+.ex-it{font-family:var(--serif);font-weight:600;font-size:1.2rem;line-height:1.4}
 .ex-it em{font-style:italic}
 .speak{background:none;border:1px solid var(--line);border-radius:999px;width:34px;height:34px;display:inline-grid;place-items:center;vertical-align:middle;color:var(--ink);flex:none}
 .speak svg{width:16px;height:16px}
@@ -182,8 +190,8 @@ code{font-size:.85em;background:var(--soft);padding:1px 5px;border-radius:4px}
 /* flash */
 .flipbtn{margin-top:6px;background:none;border:1px solid var(--line);border-radius:999px;padding:3px 14px;font-size:.8rem;color:var(--muted)}
 /* type */
-.accents{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.accents button{min-width:42px;height:38px;border:1px solid var(--line);background:var(--sheet);border-radius:8px;font-family:var(--serif);font-size:1.15rem;color:var(--ink);touch-action:manipulation}
+.accents{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px}
+.accents button{flex:1 1 0;min-width:0;height:38px;border:1px solid var(--line);background:var(--sheet);border-radius:8px;font-family:var(--serif);font-size:1.15rem;color:var(--ink);touch-action:manipulation}
 .answer-box input.close{border-color:var(--amber)}
 /* settings */
 .toggle{display:flex;gap:12px;align-items:flex-start;background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;margin-bottom:8px}
@@ -237,22 +245,22 @@ input[type=search]{background:var(--sheet);border:1px solid var(--line);border-r
 .unit .uname{font-size:.88rem;font-weight:600;line-height:1.35}
 .unit .ucount{font-size:.74rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .unit .meter{grid-column:1/4;height:3px}
-.uhead{padding:12px 12px 6px;font-size:.8rem;font-weight:600;color:var(--muted);background:var(--soft);border-bottom:1px solid var(--line)}
+.uhead{padding:12px 12px 6px;font-size:.82rem;font-weight:700;color:var(--muted);background:var(--soft);border-bottom:1px solid var(--line)}
 
 /* unit lines */
 .ulines{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
 .ulines > *{min-width:0}
 .urow{background:var(--sheet);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .urow.open{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.uline{box-sizing:border-box;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;background:var(--sheet);border:0;padding:11px 14px 13px}
+.uline{box-sizing:border-box;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;background:var(--sheet);border:0;padding:12px 14px 17px}
 .urow .uline{background:none}
 label.uline{border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;grid-template-columns:auto auto minmax(0,1fr) auto}
 .uline input{width:18px;height:18px;margin:0;accent-color:var(--ink)}
-.uline .un{font-family:var(--serif);color:var(--ink);font-size:1.1rem;line-height:1;font-variant-numeric:lining-nums}
-.uline .uname{font-weight:600;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uline .un{font-family:var(--serif);font-weight:700;color:var(--ink);font-size:1.15rem;line-height:1;font-variant-numeric:lining-nums}
+.uline .uname{font-weight:700;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .uline .ulv{font-weight:400;font-size:.75rem;color:var(--muted);margin-right:8px}
 .uline .ucount{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
-.uline .meter{position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:0;grid-column:auto}
+.uline .meter{position:absolute;left:0;right:0;bottom:0;height:6px;border-radius:0;grid-column:auto}
 .ustart{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 10px 12px}
 .ustart .btn{padding:10px 4px;font-size:.88rem;line-height:1.3;display:flex;align-items:center;justify-content:center;text-align:center;word-break:keep-all;overflow-wrap:normal}
 .startbar{position:sticky;bottom:0;z-index:4;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--paper);border-top:1px solid var(--line);margin-top:16px;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px))}
@@ -283,6 +291,29 @@ label.uline{border:1px solid var(--line);border-radius:10px;overflow:hidden;curs
 .tagline .tl-it{font-family:var(--serif);font-style:italic;font-weight:700;font-size:1.35rem;animation-delay:-3s}
 @keyframes tagSwap{0%,42%{opacity:1}50%,92%{opacity:0}100%{opacity:1}}
 @media (prefers-reduced-motion: reduce){ .splash-text{transition:opacity .3s} #splash.go .splash-text{transform:none} }
+/* ユニットの学習方法シート */
+.ubackdrop{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;padding:16px;transition:background .2s ease}
+.ubackdrop.show{background:rgba(0,0,0,.35)}
+.usheet{width:100%;max-width:440px;background:var(--sheet);border-radius:16px;padding:18px 16px;display:grid;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.18);opacity:0;transform:translateY(10px) scale(.98);transition:transform .2s ease,opacity .2s ease}
+.ubackdrop.show .usheet{transform:none;opacity:1}
+.dlg-title{font-size:1.05rem}
+.dlg-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.dlg-actions .btn{padding:12px 6px}
+.accents .hintbtn{font-family:var(--sans);font-size:.78rem;padding:0;white-space:nowrap;background:var(--sheet);opacity:1}
+/* チェックボックスとラジオボタンは自前で描く（端末によって中が黒くなるのを防ぐ） */
+input[type=checkbox],input[type=radio]{-webkit-appearance:none;appearance:none;width:20px;height:20px;margin:0;flex:none;display:inline-grid;place-content:center;background:#fff;border:1.5px solid #b8b8b8;border-radius:5px;cursor:pointer;vertical-align:middle}
+input[type=radio]{border-radius:50%}
+input[type=checkbox]:checked{background:var(--ink);border-color:var(--ink)}
+input[type=checkbox]:checked::after{content:"";width:10px;height:5px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+input[type=radio]:checked{border:6px solid var(--ink);background:#fff}
+.usheet-head{display:flex;align-items:center;gap:10px}
+.usheet-head .un{font-family:var(--serif);font-weight:700;font-size:1.4rem;color:var(--ink);line-height:1}
+.usheet-head b{flex:1;font-size:1.05rem}
+.usheet-prog{display:grid;gap:6px}
+.usheet-prog .meter{grid-column:auto;height:8px;border-radius:4px}
+.usheet .ustart{padding:0}
+.usheet .ustart .btn{padding:14px 4px;font-size:.95rem}
+@media (prefers-reduced-motion: reduce){ .ubackdrop,.usheet{transition:none} }
 /* 声の選択 */
 .vlist{display:grid;gap:6px;margin:4px 0 10px}
 .vopt{display:flex;align-items:center;gap:10px;background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
@@ -348,7 +379,7 @@ L1-0145,1,benissimo,とても良い|大変よく|最高,adv,,,挨拶・定型表
 L1-0435,1,così così,まあまあ|ぼちぼち,phrase,,,挨拶・定型表現,"Come stai? Così così, grazie.",調子はどう？まあまあだよ、ありがとう。,体調や出来を聞かれたときの定番の返事。良くも悪くもない、という控えめなニュアンス。フランス語の comme ci comme ça にあたる表現。,,元気？と自己紹介
 L1-0447,1,non c'è male,まあまあ|悪くない,phrase,,,挨拶・定型表現,"Come stai? Non c'è male, grazie.",元気？まあまあだよ、ありがとう。,調子を聞かれたときの返事。直訳は「悪くない」。親しい相手にも丁寧な場面（Come sta?）にも使える。,non male,元気？と自己紹介
 L1-0078,1,stare bene,元気である|調子がいい,phrase,,"sto bene, stai bene, sta bene, stiamo bene, state bene, stanno bene",挨拶・定型表現,"Come stai? Sto bene, grazie.",元気？ 元気だよ、ありがとう。,挨拶で体調を聞く・答える定番表現。服などが「似合う」の意味でも使う（Ti sta bene）。,,元気？と自己紹介
-L1-0261,1,stare,（調子が）〜である|いる、とどまる|〜している（stare＋ジェルンディオ）,verb,,"sto, stai, sta, stiamo, state, stanno（過去分詞 stato）",挨拶・定型表現,"Come stai? Sto bene, grazie.",調子はどう？元気だよ、ありがとう。,不規則動詞。過去分詞は essere と同形の stato で、助動詞は essere。stare＋ジェルンディオで進行形（sto mangiando）。,,元気？と自己紹介
+L1-0261,1,stare,（調子が）〜である|いる|とどまる|〜している（stare＋ジェルンディオ）,verb,,"sto, stai, sta, stiamo, state, stanno（過去分詞 stato）",挨拶・定型表現,"Come stai? Sto bene, grazie.",調子はどう？元気だよ、ありがとう。,不規則動詞。過去分詞は essere と同形の stato で、助動詞は essere。stare＋ジェルンディオで進行形（sto mangiando）。,,元気？と自己紹介
 L1-0052,1,e tu,君は？|あなたは？,phrase,,,挨拶・定型表現,"Sto bene, grazie. E tu?",元気です、ありがとう。君は？,親しい相手に使うくだけた形。丁寧に言うなら e Lei? を使う。,e te,元気？と自己紹介
 L1-0097,1,anche tu,君も|あなたも（親しい相手に）,phrase,,,挨拶・定型表現,"Buon viaggio! - Grazie, anche tu!",良い旅を！ - ありがとう、君もね！,親しい相手への返事。丁寧な相手には anche Lei を使う。,,元気？と自己紹介
 L1-0351,1,anch'io,私も,phrase,,,挨拶・定型表現,Anch'io sono stanco.,私も疲れています。,anche io の縮約形。どちらもよく使う。相手の発言に「私も（同じ）」と応じるときの定番。否定には neanch'io を使う。,anche io,元気？と自己紹介
@@ -756,13 +787,13 @@ L1-0348,1,la sedia,椅子,noun,f,sedie,宿泊,C'è una sedia libera?,空いて�
 L1-0467,1,la televisione,テレビ|テレビ放送,noun,f,televisioni,宿泊,La televisione è accesa in camera.,寝室でテレビがついています。,略して la tv（ティヴ）とも言う。テレビ受像機は il televisore。,la tv,家とホテル
 L1-0181,1,il telefono,電話|電話機,noun,m,telefoni,宿泊,Il telefono in camera non funziona.,部屋の電話が使えません。,携帯電話は il cellulare。電話に出るは rispondere al telefono、電話中は al telefono。,,家とホテル
 L1-0403,1,pronto,もしもし|はい（電話に出るとき）,interj,,,宿泊,"Pronto, chi parla?",もしもし、どちら様ですか？,電話に出るときの第一声。形容詞 pronto（準備ができた）と同形で、Sei pronto? は「準備できた？」。,,家とホテル
-L1-0053,1,essere,〜である|いる、ある,verb,,"sono, sei, è, siamo, siete, sono（過去分詞 stato）",基本動詞,Mia madre è insegnante.,私の母は教師です。,最重要の不規則動詞。職業を言うときは無冠詞。近過去の助動詞としても使う。,,基本の動詞
+L1-0053,1,essere,〜である|いる|ある,verb,,"sono, sei, è, siamo, siete, sono（過去分詞 stato）",基本動詞,Mia madre è insegnante.,私の母は教師です。,最重要の不規則動詞。職業を言うときは無冠詞。近過去の助動詞としても使う。,,基本の動詞
 L1-0039,1,avere,持つ|〜がある|（年齢が）〜歳である,verb,,"ho, hai, ha, abbiamo, avete, hanno",基本動詞,Ho due sorelle.,私には姉妹が2人います。,最重要動詞の一つ。近過去の助動詞。年齢は avere 25 anni、空腹は avere fame のように使う。h は発音しない。,,基本の動詞
 L1-0083,1,fare,する|作る,verb,,"faccio, fai, fa, facciamo, fate, fanno（過去分詞 fatto）",基本動詞,Che cosa fai domani?,明日は何をしますか？,不規則動詞。天気（fa caldo）や foto を撮る（fare una foto）など慣用表現が多い。,,基本の動詞
 L1-0050,1,dire,言う|伝える,verb,,"dico, dici, dice, diciamo, dite, dicono（過去分詞 detto）",基本動詞,Come si dice in italiano?,イタリア語で何と言いますか？,不規則動詞。voi は dite、命令形 di'。「Dimmi!」は「言って」「どうぞ」の意。,,基本の動詞
 L1-0171,1,potere,できる|〜してもよい,verb,,"posso, puoi, può, possiamo, potete, possono",基本動詞,Posso pagare con la carta?,カードで支払えますか？,助動詞的に使い、不定詞が続く。近過去の助動詞は後ろの動詞に合わせる（ho potuto / sono potuto andare）。,,基本の動詞
 L1-0136,1,volere,欲しい|〜したい|望む,verb,,"voglio, vuoi, vuole, vogliamo, volete, vogliono",基本動詞,Voglio un gelato al limone.,レモンのジェラートが欲しいです。,不規則動詞。丁寧に頼むときは条件法の vorrei（〜したいのですが）を使う。後ろに不定詞を続けて「〜したい」。,,基本の動詞
-L1-0176,1,sapere,知っている|（〜のやり方を）知っている、できる,verb,,"so, sai, sa, sappiamo, sapete, sanno",基本動詞,Non so dove sia la stazione.,駅がどこにあるのか分かりません。,sapere＋不定詞は「（習得して）できる」。人や場所を知っている場合は conoscere を使う。,,基本の動詞
+L1-0176,1,sapere,知っている|（技能として）できる,verb,,"so, sai, sa, sappiamo, sapete, sanno",基本動詞,Non so dove sia la stazione.,駅がどこにあるのか分かりません。,sapere＋不定詞は「（習得して）できる」。人や場所を知っている場合は conoscere を使う。,,基本の動詞
 L1-0512,1,conoscere,知っている|知り合う,verb,,"conosco, conosci, conosce, conosciamo, conoscete, conoscono（過去分詞 conosciuto）",基本動詞,Conosci Marco?,マルコを知っていますか？,人・場所を「知っている」。事実や方法を知る場合は sapere。近過去 ho conosciuto は「知り合った」。,,基本の動詞
 L1-0485,1,dare,与える|渡す|あげる,verb,,"do, dai, dà, diamo, date, danno（過去分詞 dato）",基本動詞,Mi dà il suo numero di telefono?,電話番号を教えていただけますか？,不規則動詞。3人称単数 dà はアクセント付きで前置詞 da と区別。dare un esame は「試験を受ける」。,,基本の動詞
 L1-0172,1,prendere,取る|（店で）これにする・買う|（乗り物に）乗る|（飲食物を）注文する・とる,verb,,"prendo, prendi, prende, prendiamo, prendete, prendono（過去分詞 preso）",基本動詞,"Prendo questo, grazie.",これをいただきます、ありがとう。,過去分詞が不規則。注文（Prendo un caffè）や乗り物に乗る（prendere il treno）にも使う万能動詞。,,基本の動詞
@@ -1810,7 +1841,7 @@ L3-0477,3,lo spinacio,ほうれん草,noun,m,spinaci,食事・飲み物,Mangio s
 L3-0676,3,lo zucchino,ズッキーニ,noun,m,zucchini,食事・飲み物,Vorrei una pizza con gli zucchini.,ズッキーニのピザをください。,z で始まる男性名詞なので単数の冠詞は lo（s+子音で始まる語も同様）。複数は gli zucchini。女性形 la zucchina（複数 le zucchine）も同じ意味で広く使われる。,la zucchina,野菜・果物・ハーブ
 L3-0448,3,il peperone,パプリカ|ピーマン,noun,m,peperoni,食事・飲み物,Vorrei una pizza con i peperoni.,パプリカのピザをください。,イタリアのピーマンは肉厚で大きく、赤・黄・緑がある。peperoncino は唐辛子で別の語。,,野菜・果物・ハーブ
 L3-0795,3,il carciofo,アーティチョーク,noun,m,carciofi,食事・飲み物,Come antipasto prendo i carciofi alla romana.,前菜にローマ風アーティチョークをいただきます。,ローマ料理の carciofi alla romana や、ユダヤ風の alla giudia が有名。春が旬。,,野菜・果物・ハーブ
-L3-0796,3,il cavolo,キャベツ|カリフラワーなどアブラナ科の野菜,noun,m,cavoli,食事・飲み物,Per la zuppa uso un cavolo e due patate.,スープにはキャベツ1玉とじゃがいも2個を使います。,cavolfiore（カリフラワー）や cavolo nero（黒キャベツ）など、cavolo を含む野菜名がある。Che cavolo! は Che cazzo! を和らげた口語の間投句で、驚きや苛立ちを表す。,,野菜・果物・ハーブ
+L3-0796,3,il cavolo,キャベツ|アブラナ科の野菜（カリフラワーなど）,noun,m,cavoli,食事・飲み物,Per la zuppa uso un cavolo e due patate.,スープにはキャベツ1玉とじゃがいも2個を使います。,cavolfiore（カリフラワー）や cavolo nero（黒キャベツ）など、cavolo を含む野菜名がある。Che cavolo! は Che cazzo! を和らげた口語の間投句で、驚きや苛立ちを表す。,,野菜・果物・ハーブ
 L3-0791,3,il broccolo,ブロッコリー,noun,m,broccoli,食事・飲み物,Mangio i broccoli con un po' d'olio e limone.,ブロッコリーをオリーブオイルとレモンで食べます。,料理では複数形 i broccoli が普通。単数 il broccolo は1株を指す。,,野菜・果物・ハーブ
 L3-0764,3,la zucca,カボチャ,noun,f,zucche,食事・飲み物,Mi piace la zuppa di zucca.,私はカボチャのスープが好きです。,秋の定番食材。ravioli di zucca（カボチャのラビオリ）も有名。口語で「頭」の意味にもなる。,,野菜・果物・ハーブ
 L3-0705,3,il finocchio,フェンネル|ウイキョウ,noun,m,finocchi,食事・飲み物,Mi piace l'insalata di finocchi e arance.,フェンネルとオレンジのサラダが好きです。,生でサラダにしたり、焼いたり煮たりして食べる。俗語で男性同性愛者への蔑称になるので、人には使わない。,,野菜・果物・ハーブ
@@ -1879,7 +1910,7 @@ L3-0666,3,tenero,柔らかい（肉など）|優しい,adj,,"tenera, teneri, ten
 L3-0313,3,l'odore,におい|香り,noun,m,odori,食事・飲み物,Che buon odore viene dalla cucina!,台所からいいにおいがしますね！,良い・悪いどちらにも使える中立的な語。良い香りは profumo、強い悪臭は puzzo。,,料理をする
 L3-0444,3,la padella,フライパン,noun,f,padelle,食事・飲み物,"Metti l'olio nella padella, per favore.",フライパンにオイルを入れてください。,取っ手付きの浅い鍋・フライパン。深い鍋は la pentola。cadere dalla padella nella brace は「一難去ってまた一難」。,,台所の道具
 L3-0417,3,il forno,オーブン|パン屋|窯,noun,m,forni,食事・飲み物,"Il pane è ancora caldo, esce dal forno.",パンはまだ温かい。オーブンから出たばかりだ。,パン屋の意味では panetteria や panificio も使う。forno a microonde は電子レンジ。,,台所の道具
-L3-0596,3,il fornello,コンロ|（コンロの）火口、バーナー,noun,m,fornelli,食事・飲み物,Ho dimenticato il fornello acceso in cucina.,台所のコンロをつけっぱなしにしてしまった。,コンロの火口一つや携帯用のコンロ（キャンプ用など）を指す。キッチンのコンロ全体は複数形 i fornelli で言うことが多い。オーブンは forno。,,台所の道具
+L3-0596,3,il fornello,コンロ|（コンロの）火口|バーナー,noun,m,fornelli,食事・飲み物,Ho dimenticato il fornello acceso in cucina.,台所のコンロをつけっぱなしにしてしまった。,コンロの火口一つや携帯用のコンロ（キャンプ用など）を指す。キッチンのコンロ全体は複数形 i fornelli で言うことが多い。オーブンは forno。,,台所の道具
 L3-0307,3,il microonde,電子レンジ,noun,m,microonde（不変）,食事・飲み物,Puoi scaldare il piatto nel microonde?,料理を電子レンジで温めてもらえますか？,複数形も同形。forno a microonde の短縮形で、forno を省いて男性名詞として使う。,il forno a microonde,台所の道具
 L3-0379,3,la teiera,ティーポット|急須,noun,f,teiere,食事・飲み物,Metto l'acqua calda nella teiera.,ティーポットにお湯を入れます。,お茶を淹れるポット全般を指す。お茶は il tè（紅茶は il tè nero）、ティーカップは la tazza da tè。,,台所の道具
 L3-0347,3,la caraffa,水差し|カラフェ,noun,f,caraffe,食事・飲み物,"Una caraffa d'acqua e due bicchieri, per favore.",水をカラフェで1つと、グラスを2つお願いします。,レストランでは caraffa di vino（ワインのカラフェ）や caraffa d'acqua（水のピッチャー）を頼むことが多い。,,台所の道具
@@ -1951,7 +1982,7 @@ L3-0572,3,il capolinea,終点|始発駅,noun,m,capolinea（不変）,交通・�
 L3-0680,3,la coincidenza,乗り継ぎ|接続便|偶然の一致,noun,f,coincidenze,交通・移動,Perdo la coincidenza per Firenze.,フィレンツェ行きの乗り継ぎに乗り遅れてしまう。,電車・バスの乗り継ぎ便を指す。「偶然の一致」の意味もある。perdere la coincidenza は乗り継ぎを逃す。,,電車とバスに乗る
 L3-0562,3,l'andata,行き|往路,noun,f,andate,交通・移動,Vorrei due biglietti di andata e ritorno.,往復切符を2枚ください。,andata e ritorno は「往復」、solo andata は「片道」。反対語は il ritorno（復路）。,,電車とバスに乗る
 L3-0382,3,l'abbonamento,定期券|定期購読,noun,m,abbonamenti,交通・移動,Vorrei fare un abbonamento mensile per la metro.,地下鉄の1か月定期券を作りたいのですが。,交通機関の定期券のほか、雑誌・ジムなどの会員契約や購読にも使う。fare un abbonamento で「契約する」。,,電車とバスに乗る
-L3-0579,3,convalidare,刻印する（切符を）|有効にする|承認する、認証する,verb,,"convalido, convalidi, convalida, convalidiamo, convalidate, convalidano",交通・移動,Devi convalidare il biglietto prima di salire sul treno.,電車に乗る前に切符に刻印しなければなりません。,イタリアでは乗車前に刻印機で切符を有効にする。しないと罰金。timbrare も口語でよく使う。,timbrare,電車とバスに乗る
+L3-0579,3,convalidare,刻印する（切符を）|有効にする|承認する|認証する,verb,,"convalido, convalidi, convalida, convalidiamo, convalidate, convalidano",交通・移動,Devi convalidare il biglietto prima di salire sul treno.,電車に乗る前に切符に刻印しなければなりません。,イタリアでは乗車前に刻印機で切符を有効にする。しないと罰金。timbrare も口語でよく使う。,timbrare,電車とバスに乗る
 L3-0416,3,la ferrovia,鉄道|線路,noun,f,ferrovie,交通・移動,La stazione è vicino alla ferrovia.,駅は線路のすぐ近くにあります。,路線網や制度としての「鉄道」を指す。個々の列車は treno、国鉄は le Ferrovie dello Stato。,la strada ferrata,電車とバスに乗る
 L3-0280,3,il controllore,車掌|検札係,noun,m,controllori,交通・移動,Il controllore chiede i biglietti a tutti i passeggeri.,検札係は乗客全員に切符を求めます。,列車やバスで切符を確認する人。女性は la controllora も使われる。切符は打刻（convalidare）を忘れずに。,,電車とバスに乗る
 L3-0311,3,la navetta,シャトルバス|送迎バス,noun,f,navette,交通・移動,C'è una navetta gratuita per l'aeroporto?,空港行きの無料シャトルバスはありますか？,空港やホテルへの短距離の送迎便を指す。fare la navetta は「往復する」の意味でも使う。,,電車とバスに乗る
@@ -2381,7 +2412,7 @@ L3-0240,3,sembrare,〜のように思われる|〜に見える,verb,,"sembro, se
 L3-0815,3,dipendere,〜次第である|依存する|左右される,verb,,"dipendo, dipendi, dipende, dipendiamo, dipendete, dipendono（過去分詞 dipeso）",基本動詞,Dipende dal tempo che farà domani.,明日の天気次第です。,「〜次第」は dipendere da。単独の Dipende. は「場合によるね」の定番返答。近過去は essere をとる（è dipeso）。,,起こる・始める・終える
 L3-0611,3,mancare,足りない|欠けている|いなくて寂しい,verb,,"manco, manchi, manca, manchiamo, mancate, mancano",基本動詞,Mi manchi molto.,あなたがいなくてとても寂しい。,「A manca a B」でBはAがいなくて寂しい。主語は恋しい相手で、mi manchi は「君が恋しい」。この意味の近過去の助動詞は essere（Mi sei mancato/a）。,,起こる・始める・終える
 L3-0522,3,occorrere,必要である|要る,verb,,"occorro, occorri, occorre, occorriamo, occorrete, occorrono（過去分詞 occorso）",基本動詞,Occorre un documento per entrare.,入るには身分証が必要です。,多くは3人称で使い、助動詞は essere。Mi occorre un biglietto.（私には切符が要る）の形も頻出。,servire,起こる・始める・終える
-L3-0441,3,occupare,占める|占領する|（場所・時間を）取る、ふさぐ,verb,,"occupo, occupi, occupa, occupiamo, occupate, occupano",基本動詞,Questo posto è occupato?,この席はふさがっていますか？,再帰形 occuparsi di は「〜を担当する、世話をする」。席やトイレの「使用中」は occupato。,,起こる・始める・終える
+L3-0441,3,occupare,占める|占領する|（場所・時間を）取る|ふさぐ,verb,,"occupo, occupi, occupa, occupiamo, occupate, occupano",基本動詞,Questo posto è occupato?,この席はふさがっていますか？,再帰形 occuparsi di は「〜を担当する、世話をする」。席やトイレの「使用中」は occupato。,,起こる・始める・終える
 L3-0100,3,ricominciare,再び始める|やり直す,verb,,"ricomincio, ricominci, ricomincia, ricominciamo, ricominciate, ricominciano",基本動詞,Dopo la pausa ricominciamo a lavorare.,休憩の後、また仕事を始めます。,「再び〜し始める」は ricominciare a＋不定詞。近過去は他動詞では avere（Ho ricominciato il lavoro.）、自動詞では essere（La scuola è ricominciata.）を使う。,rincominciare,起こる・始める・終える
 L3-0041,3,terminare,終える|終わる,verb,,"termino, termini, termina, terminiamo, terminate, terminano",基本動詞,A che ora termina la lezione?,授業は何時に終わりますか？,他動詞は avere、自動詞（終わる）は essere で近過去を作る。finire とほぼ同義だが、やや改まった響き。,finire,起こる・始める・終える
 L3-0061,3,costruire,建設する|作る|建てる,verb,,"costruisco, costruisci, costruisce, costruiamo, costruite, costruiscono",基本動詞,Vogliono costruire una nuova casa vicino al mare.,彼らは海の近くに新しい家を建てたがっています。,-isco型の動詞。過去分詞は規則形（costruito）。建物や橋など大きなものを作る時に使う。,,起こる・始める・終える
@@ -2445,7 +2476,7 @@ L4-0530,4,eccetto,〜を除いて|〜以外は,prep,,,副詞・接続詞・前�
 L4-0022,4,riguardo a,〜について|〜に関して,prep,,,副詞・接続詞・前置詞,Ho una domanda riguardo a questo biglietto.,この切符について質問があります。,「riguardo a＋名詞」の形で使う。同じ意味で a proposito di や in merito a、やや硬い表現では circa も使われる。,a proposito di,範囲と関係を示すことば
 L4-0025,4,rispetto a,〜と比べて|〜に関して,prep,,,副詞・接続詞・前置詞,"Rispetto a ieri, oggi fa più freddo.",昨日に比べて、今日は寒いです。,比較にも話題にも使う。後ろに代名詞が来る場合は rispetto a me のように a を残す。,in confronto a,範囲と関係を示すことば
 L4-0344,4,oltre,〜の向こうに|〜を越えて|〜に加えて,prep,,,副詞・接続詞・前置詞,Il ristorante è subito oltre il ponte.,レストランは橋を渡ってすぐのところです。,oltre a＋名詞で「〜に加えて、〜のほかに」。副詞としても使う（andare oltre＝先へ進む）。,,範囲と関係を示すことば
-L4-0353,4,presso,〜で（勤務先・所属先）|〜のところで、〜方で|〜の近くに|〜気付,prep,,,副詞・接続詞・前置詞,Lavoro presso una piccola agenzia di viaggi.,私は小さな旅行代理店で働いています。,やや改まった語。勤務先・所属先（lavorare presso 〜）や「〜宅で」の意味が多く、住所の c/o（〜方）にも使う。「近く」の意味では日常では vicino a が自然。,,範囲と関係を示すことば
+L4-0353,4,presso,〜で（勤務先・所属先）|〜のところで|〜方で|〜の近くに|〜気付,prep,,,副詞・接続詞・前置詞,Lavoro presso una piccola agenzia di viaggi.,私は小さな旅行代理店で働いています。,やや改まった語。勤務先・所属先（lavorare presso 〜）や「〜宅で」の意味が多く、住所の c/o（〜方）にも使う。「近く」の意味では日常では vicino a が自然。,,範囲と関係を示すことば
 L4-0389,4,ovunque,どこでも|どこへ行っても,adv,,,副詞・接続詞・前置詞,"Ovunque vada, porto sempre la macchina fotografica.",どこへ行っても、いつもカメラを持ち歩きます。,「どこに〜しても」の譲歩節では接続法を伴う（ovunque vada）。dovunque もほぼ同義。,dovunque,範囲と関係を示すことば
 L4-0614,4,dappertutto,至る所に|あちこちに,adv,,,副詞・接続詞・前置詞,Ho cercato le chiavi dappertutto.,鍵をあちこち探しました。,「dappertutto」は1語で書くのが一般的。ovunque は「どこでも」の意味でも使え、やや書き言葉的。,in ogni luogo,範囲と関係を示すことば
 L4-0213,4,finora,これまで|今まで,adv,,,副詞・接続詞・前置詞,Finora non ho avuto nessun problema con l'albergo.,これまでホテルで問題は一度もありません。,現在までの期間を表し、近過去や現在形とよく使う。fino ad ora、fin qui もほぼ同義。,fino ad ora|fino a ora,範囲と関係を示すことば
@@ -2757,7 +2788,7 @@ L4-0160,4,il rifugio,山小屋|避難所,noun,m,rifugi,宿泊,Dormiamo in un rif
 L4-0449,4,la mezza pensione,ハーフボード|朝食・夕食付き宿泊,noun,f,mezze pensioni,宿泊,Vorrei la mezza pensione per tre notti.,3泊、朝食と夕食付きでお願いしたいのですが。,朝食と夕食（または昼食）が付くプラン。全食付きは pensione completa、朝食のみは camera con colazione。,,船旅と宿
 L4-0145,4,il lettino,ビーチベッド|ベビーベッド|診察台,noun,m,lettini,宿泊,Vorrei affittare due lettini e un ombrellone.,ビーチベッドを2台とパラソルを1本借りたいのですが。,letto の指小形。海水浴場では lettino と ombrellone を借りる。ベビーベッドや診察台の意味もある。,,船旅と宿
 L4-0084,4,esplorare,探検する|探索する|散策する,verb,,"esploro, esplori, esplora, esploriamo, esplorate, esplorano",宿泊,Domani vogliamo esplorare il centro storico a piedi.,明日は歩いて旧市街を探索したいです。,他動詞なので前置詞なしで目的語をとる。近過去は avere を助動詞にとる（ho esplorato）。,,船旅と宿
-L4-0312,4,disfare,（荷物を）解く|ほどく、崩す|解体する,verb,,"disfaccio, disfai, disfa, disfacciamo, disfate, disfanno（過去分詞 disfatto）",宿泊,Devo disfare la valigia appena arrivo in albergo.,ホテルに着いたらすぐスーツケースの荷物を解かなければなりません。,fare と同じ活用の不規則動詞。disfare la valigia で荷物を解く、disfare il letto は寝具をはがす・寝床を崩す意味で、fare il letto（ベッドを整える）の反対。,,船旅と宿
+L4-0312,4,disfare,（荷物を）解く|ほどく|崩す|解体する,verb,,"disfaccio, disfai, disfa, disfacciamo, disfate, disfanno（過去分詞 disfatto）",宿泊,Devo disfare la valigia appena arrivo in albergo.,ホテルに着いたらすぐスーツケースの荷物を解かなければなりません。,fare と同じ活用の不規則動詞。disfare la valigia で荷物を解く、disfare il letto は寝具をはがす・寝床を崩す意味で、fare il letto（ベッドを整える）の反対。,,船旅と宿
 L4-0281,4,l'anfiteatro,円形闘技場|円形劇場,noun,m,anfiteatri,観光・文化,Domani visitiamo l'anfiteatro romano.,明日はローマ時代の円形闘技場を見学します。,古代ローマの遺跡を指すことが多い。母音で始まる男性名詞なので冠詞は l'、複数は gli anfiteatri。,,遺跡と芸術
 L4-0162,4,la rovina,遺跡|廃墟|破滅,noun,f,rovine,観光・文化,Domani visitiamo le rovine romane vicino alla città.,明日は町の近くのローマ遺跡を訪れます。,「遺跡」の意味では複数形 le rovine が普通。単数は「破滅、荒廃」の意味でも使う。考古学的遺跡は gli scavi も使う。,,遺跡と芸術
 L4-0255,4,il tempio,神殿|寺院|寺,noun,m,templi,観光・文化,Il tempio greco di Paestum è molto bello.,パエストゥムのギリシャ神殿はとても美しい。,古代の神殿にも日本の寺にも使う。日本の神社は santuario、キリスト教の教会は chiesa。複数形は templi。,,遺跡と芸術
@@ -2769,7 +2800,7 @@ L4-0029,4,il santo,聖人|聖者,noun,m,santi,観光・文化,Oggi è la festa d
 L4-0159,4,la religione,宗教,noun,f,religioni,観光・文化,In Italia la religione più diffusa è quella cattolica.,イタリアで最も広まっている宗教はカトリックです。,-ione で終わる名詞は基本的に女性名詞。形容詞は religioso（宗教的な）。,,遺跡と芸術
 L4-0580,4,religioso,宗教的な|信心深い,adj,,"religiosa, religiosi, religiose",観光・文化,In Italia ci sono molte feste religiose.,イタリアには宗教的な祝祭がたくさんあります。,名詞の後ろに置くのが普通。人に使うと「信心深い」の意味にもなる。,,遺跡と芸術
 L4-0365,4,la scultura,彫刻|彫像,noun,f,sculture,観光・文化,Nel museo ci sono molte sculture antiche.,その美術館にはたくさんの古代の彫刻があります。,芸術ジャンルとしても作品としても使う。作品は statua（立像）とも言う。scultore は「彫刻家」。,,遺跡と芸術
-L4-0006,4,la pittura,絵画|絵を描くこと|塗料、ペンキ|塗装,noun,f,pitture,観光・文化,Mi piace molto la pittura del Rinascimento.,私はルネサンスの絵画がとても好きです。,作品としての「絵」は il dipinto や il quadro。pittura は芸術分野や塗料・ペンキの意味にも使う。,,遺跡と芸術
+L4-0006,4,la pittura,絵画|絵を描くこと|塗料|ペンキ|塗装,noun,f,pitture,観光・文化,Mi piace molto la pittura del Rinascimento.,私はルネサンスの絵画がとても好きです。,作品としての「絵」は il dipinto や il quadro。pittura は芸術分野や塗料・ペンキの意味にも使う。,,遺跡と芸術
 L4-0208,4,il dipinto,絵画|絵,noun,m,dipinti,観光・文化,Questo dipinto è del Rinascimento.,この絵画はルネサンス期のものです。,dipingere の過去分詞から生まれた名詞。壁画なども含む。quadro は額に入った絵を指す。,il quadro,遺跡と芸術
 L4-0082,4,dipingere,（絵を）描く|塗る,verb,,"dipingo, dipingi, dipinge, dipingiamo, dipingete, dipingono（過去分詞 dipinto）",観光・文化,Mia sorella dipinge paesaggi molto belli.,姉はとても美しい風景画を描きます。,過去分詞が不規則。絵の具で描くのが dipingere、鉛筆などで描くのは disegnare。壁を塗るのにも使う。,,遺跡と芸術
 L4-0235,4,la poesia,詩|詩作,noun,f,poesie,観光・文化,Mi piace leggere le poesie di Leopardi.,私はレオパルディの詩を読むのが好きです。,個々の詩も詩というジャンルも指す。詩人は il poeta / la poetessa。複数形は poesie（-ie）。,,遺跡と芸術
@@ -3041,7 +3072,9 @@ L4-0047,4,trascorrere,過ごす|（時が）過ぎる,verb,,"trascorro, trascorr
 L4-0542,4,godersi,楽しむ|満喫する,verb,,"mi godo, ti godi, si gode, ci godiamo, vi godete, si godono",基本動詞,Ci godiamo la vista dal balcone.,私たちはバルコニーからの眺めを満喫しています。,再帰動詞。godersi la vita（人生を楽しむ）など。近過去は essere を使う（mi sono goduto/a）。,,体を使う動詞
 L5-0273,5,augurare,祈る|願う|（幸運などを）祈る,verb,,"auguro, auguri, augura, auguriamo, augurate, augurano",挨拶・定型表現,Ti auguro un buon viaggio e tanta felicità.,良い旅と、たくさんの幸せを祈っています。,augurare qualcosa a qualcuno の形で使う。「幸運を祈る」は Ti auguro buona fortuna。名詞 auguri は誕生日や祝日などの「おめでとう」の挨拶。,,祈りと驚きのひとこと
 L5-0009,5,incrociare le dita,幸運を祈る|指を交差させる,phrase,,"incrocio, incroci, incrocia, incrociamo, incrociate, incrociano",挨拶・定型表現,"Domani ho l'esame, incrocia le dita per me!",明日試験があるんだ、私のために幸運を祈ってね！,人差し指と中指を交差させて幸運を願う仕草から。「Incrociamo le dita!」で「うまくいくといいね」。,,祈りと驚きのひとこと
-L5-0402,5,cento di questi giorni,これからもこんな幸せな日が続きますように|（誕生日などで）この日が何度も巡ってきますように,phrase,,,挨拶・定型表現,"Auguri, cento di questi giorni!",おめでとう、これからもこんな日がたくさん来ますように！,直訳は「こんな日が100回」。誕生日や記念日の祝福で、Auguri や Buon compleanno に添えて言う。,,祈りと驚きのひとこと
+L5-0402,5,cento di questi giorni,"こんな幸せな日が
+これからも続きますように|この日が何度も
+巡ってきますように（誕生日などで）",phrase,,,挨拶・定型表現,"Auguri, cento di questi giorni!",おめでとう、これからもこんな日がたくさん来ますように！,直訳は「こんな日が100回」。誕生日や記念日の祝福で、Auguri や Buon compleanno に添えて言う。,,祈りと驚きのひとこと
 L5-0209,5,distinti saluti,敬具|よろしくお願いいたします（手紙・メールの結び）,phrase,,,挨拶・定型表現,Restiamo in attesa di una risposta. Distinti saluti.,ご返信をお待ちしております。敬具,改まった手紙やビジネスメールの結びの定型句。親しい相手には Cari saluti や Un abbraccio を使う。,cordiali saluti,祈りと驚きのひとこと
 L5-0116,5,ci mancherebbe,とんでもない|もちろんです|どういたしまして,phrase,,,挨拶・定型表現,"Grazie mille! – Ci mancherebbe, è stato un piacere.",本当にありがとう！ – とんでもない、喜んでしたことですから。,お礼や謝罪への返事（「とんでもない」）や、許可・依頼に対する「もちろん、当然です」に使う。ci mancherebbe altro とも言う。,ci mancherebbe altro,祈りと驚きのひとこと
 L5-0149,5,mica,まさか〜ない|別に〜ない|全然〜ない,adv,,,挨拶・定型表現,Non è mica male questo vino!,このワイン、なかなかいけるよ！,口語で否定を強める。non と一緒に使うのが普通で、non è mica male は「悪くない、なかなか良い」。文頭の Mica で否定を省くこともある。,,祈りと驚きのひとこと
@@ -3098,7 +3131,7 @@ L5-0305,5,il patrigno,継父|義父（母の再婚相手）,noun,m,patrigni,家�
 L5-0355,5,il padrino,代父|名付け親|ゴッドファーザー,noun,m,padrini,家族・人,Il padrino del bambino porta un regalo per il battesimo.,その子の代父が洗礼のお祝いにプレゼントを持ってくる。,洗礼・堅信の立会人の男性。女性は la madrina。複数形 i padrini は代父母（男女）を指すこともある。,,親族と結婚
 L5-0349,5,la madrina,代母|名付け親（女性）,noun,f,madrine,家族・人,La mia madrina mi ha regalato un bellissimo libro per il compleanno.,代母は誕生日にとても素敵な本をプレゼントしてくれました。,男性は il padrino。洗礼や堅信の立会人。padrino は複数形 padrini で「代父母」の意味にもなる。,,親族と結婚
 L5-0340,5,il/la coniuge,配偶者,noun,mf,"i coniugi, le coniugi",家族・人,Anche il coniuge deve firmare il documento.,配偶者も書類に署名しなければなりません。,男女同形。複数 coniugi は「夫婦」の意味でも使う。公的書類や手続きで頻出する改まった語。,,親族と結婚
-L5-0178,5,sposare,結婚する（〜と）|（司祭などが）結婚させる、（娘を）嫁がせる,verb,,"sposo, sposi, sposa, sposiamo, sposate, sposano",家族・人,Marco sposa Giulia a giugno.,マルコは6月にジュリアと結婚します。,他動詞で「〜と結婚する」。前置詞は不要（sposare Giulia）。再帰形 sposarsi は「結婚する」、sposarsi con は「〜と結婚する」。,,親族と結婚
+L5-0178,5,sposare,結婚する（〜と）|（司祭などが）結婚させる|（娘を）嫁がせる,verb,,"sposo, sposi, sposa, sposiamo, sposate, sposano",家族・人,Marco sposa Giulia a giugno.,マルコは6月にジュリアと結婚します。,他動詞で「〜と結婚する」。前置詞は不要（sposare Giulia）。再帰形 sposarsi は「結婚する」、sposarsi con は「〜と結婚する」。,,親族と結婚
 L5-0416,5,il celibe,独身男性|未婚の男性,noun,m,celibi,家族・人,Nel modulo c'è una casella per il celibe e una per la nubile.,書類には、独身男性用の欄と独身女性用の欄があります。,本来は形容詞（男性の「未婚の」）で、女性は nubile。名詞としては書類などやや硬い文脈で使い、日常会話では lo scapolo（独身男性）がよく使われる。書類の婚姻状況欄では celibe/nubile と書く。,lo scapolo,親族と結婚
 L5-0351,5,la nubile,未婚の女性|独身女性,adj,f,"nubile（女性単数）, nubili（女性複数）；男性は celibe（単数）, celibi（複数）",家族・人,Nel modulo devo scrivere se sono nubile o sposata.,書類に、未婚か既婚かを書かなければなりません。,女性に対して使う「未婚の」。男性には celibe を使う。書類や正式な場面でよく見られる。,,親族と結婚
 L5-0415,5,il vedovo,男やもめ|妻に先立たれた男性,noun,m,vedovi,家族・人,Mio zio è vedovo da cinque anni.,叔父は5年前に妻を亡くしています。,女性は la vedova（複数 vedove）。essere vedovo di ... で「〜に先立たれた」。形容詞としても使う。,,親族と結婚
@@ -3241,7 +3274,7 @@ L5-0181,5,la tangenziale,環状道路|バイパス,noun,f,tangenziali,交通・�
 L5-0365,5,il cavalcavia,陸橋|高架橋,noun,m,i cavalcavia（不変）,交通・移動,"Dopo il cavalcavia, gira a destra e vai dritto fino al semaforo.",陸橋を過ぎたら右に曲がって、信号までまっすぐ行ってください。,複合語で複数形は不変（i cavalcavia）。道路や線路をまたぐ橋を指す。男性名詞。,il sovrappasso,道と旅路
 L5-0411,5,la pensilina,（バス停などの）屋根付き待合所|（ホームの）上屋,noun,f,pensiline,交通・移動,Aspettiamo l'autobus sotto la pensilina perché piove.,雨が降っているので、屋根の下でバスを待ちましょう。,バス停の屋根や待合スペース、駅ホームの屋根を指す。バス停そのものは fermata dell'autobus。,,道と旅路
 L5-0103,5,la tratta,区間|路線,noun,f,tratte,交通・移動,Questa tratta è chiusa per lavori fino a domani sera.,この区間は明日の夜まで工事のため運休です。,鉄道・バスなどの一区間や路線の一部を指す。別の意味で「人身売買」(tratta di esseri umani)もある。,,道と旅路
-L5-0264,5,la vignetta,高速道路の通行許可ステッカー|風刺漫画、一コマ漫画,noun,f,vignette,交通・移動,Per guidare in Svizzera serve la vignetta autostradale.,スイスで運転するには高速道路用のステッカーが必要です。,スイスやオーストリアなどで高速利用のため車に貼る。日常では「風刺漫画、一コマ漫画」の意味のほうが一般的。,,道と旅路
+L5-0264,5,la vignetta,高速道路の通行許可ステッカー|風刺漫画|一コマ漫画,noun,f,vignette,交通・移動,Per guidare in Svizzera serve la vignetta autostradale.,スイスで運転するには高速道路用のステッカーが必要です。,スイスやオーストリアなどで高速利用のため車に貼る。日常では「風刺漫画、一コマ漫画」の意味のほうが一般的。,,道と旅路
 L5-0356,5,percorrere,（道を）進む|踏破する|たどる,verb,,"percorro, percorri, percorre, percorriamo, percorrete, percorrono（過去分詞 percorso）",交通・移動,Per arrivare al castello bisogna percorrere un sentiero nel bosco.,城に着くには、森の小道を歩いて行かなければなりません。,他動詞で直接目的語をとる（percorrere una strada）。過去分詞は不規則で percorso。近過去は avere を使う。,,道と旅路
 L5-0218,5,incamminarsi,歩き出す|出発する|向かう,verb,,"mi incammino, ti incammini, si incammina, ci incamminiamo, vi incamminate, si incamminano",交通・移動,Ci incamminiamo verso il centro prima che faccia buio.,暗くなる前に、中心街へ向かって歩き出しましょう。,再帰動詞で、近過去は essere を使う（mi sono incamminato/a）。徒歩で出発する場面で使い、方向は verso や per で示す。,,道と旅路
 L5-0221,5,invertire,逆にする|入れ替える|方向転換する,verb,,"invertisco, invertisci, invertisce, invertiamo, invertite, invertiscono",交通・移動,Alla rotonda dobbiamo invertire la marcia e tornare indietro.,ロータリーでUターンして引き返さなければなりません。,-isco型の動詞。「Uターンする」は invertire la marcia または fare inversione。invertire は本来「逆にする」の意味。,,道と旅路
@@ -3345,7 +3378,7 @@ L5-0215,5,la guarigione,回復|治癒,noun,f,guarigioni,体・健康,Auguro una 
 L5-0393,5,la sanità,保健医療|医療制度,noun,f,sanità（不変）,体・健康,In Italia la sanità pubblica è gratuita per molti servizi.,イタリアでは公的医療の多くのサービスが無料です。,-à で終わる名詞は不変。「健全さ」の意味もあるが、日常では医療制度の意味でよく使う。,il sistema sanitario,けがと検査
 L5-0229,5,la nutrizione,栄養|栄養摂取,noun,f,nutrizioni,体・健康,Una buona nutrizione è importante per la salute di tutta la famiglia.,良い栄養は家族みんなの健康にとって大切です。,nutrimento は「栄養物」、alimentazione は「食生活」。nutrizione は栄養摂取や栄養学の文脈で使う。,,食べる・眠る
 L5-0353,5,nutrirsi,栄養を取る|（〜を）常食とする,verb,,"mi nutro, ti nutri, si nutre, ci nutriamo, vi nutrite, si nutrono",体・健康,"Mi nutro soprattutto di frutta e verdura, perché è più leggera.",私は主に果物と野菜を食べています。そのほうが軽いからです。,再帰動詞。「〜を常食とする」は nutrirsi di ...。他動詞 nutrire は「養う、栄養を与える」。やや改まった語で、日常では mangiare が普通。,,食べる・眠る
-L5-0287,5,digerire,消化する|（嫌なことを）我慢する、受け入れる,verb,,"digerisco, digerisci, digerisce, digeriamo, digerite, digeriscono",体・健康,Dopo cena faccio una passeggiata per digerire meglio.,夕食後は消化を助けるために散歩をします。,-isco 型の動詞。比喩的な「（嫌なことを）受け入れる」の意味では、否定形 non digerisco で「我慢できない」の意味でよく使う。,,食べる・眠る
+L5-0287,5,digerire,消化する|（嫌なことを）我慢する|受け入れる,verb,,"digerisco, digerisci, digerisce, digeriamo, digerite, digeriscono",体・健康,Dopo cena faccio una passeggiata per digerire meglio.,夕食後は消化を助けるために散歩をします。,-isco 型の動詞。比喩的な「（嫌なことを）受け入れる」の意味では、否定形 non digerisco で「我慢できない」の意味でよく使う。,,食べる・眠る
 L5-0368,5,deglutire,飲み込む|嚥下する,verb,,"deglutisco, deglutisci, deglutisce, deglutiamo, deglutite, deglutiscono",体・健康,Ho mal di gola e faccio fatica a deglutire.,喉が痛くて、飲み込むのがつらいです。,-isco 型の動詞。やや医学的・改まった語で、日常会話では inghiottire がよく使われる。,inghiottire,食べる・眠る
 L5-0370,5,ingoiare,飲み込む|丸呑みする|(嫌なことを)我慢する,verb,,"ingoio, ingoi, ingoia, ingoiamo, ingoiate, ingoiano",体・健康,Il bambino ha ingoiato una moneta per sbaglio.,その子は誤って硬貨を飲み込んでしまった。,inghiottire もほぼ同義。比喩的に「(屈辱などを)耐え忍ぶ」の意味でも使う。近過去の助動詞は avere。,inghiottire,食べる・眠る
 L5-0404,5,digiunare,断食する|絶食する,verb,,"digiuno, digiuni, digiuna, digiuniamo, digiunate, digiunano",体・健康,Prima delle analisi del sangue bisogna digiunare per dodici ore.,血液検査の前は12時間絶食しなければなりません。,助動詞は avere（ho digiunato）。宗教的な断食にも健康上の絶食にも使う。名詞は il digiuno。essere a digiuno は「空腹で」。,,食べる・眠る
@@ -3610,6 +3643,9 @@ LS.del('itv:words'); LS.del('itv:dataver');
 let words = [], byId = new Map(), synCache = new Map();
 function prep(w){
   w.alt = w.alt || []; w.ja = w.ja || [];
+  /* 訳語の中の改行は、大きな見出しの改行位置の指定。ほかの表示では詰める */
+  if(!w.jaLines) w.jaLines = w.ja.slice();
+  w.ja = w.jaLines.map(m => m.replace(/\s*\n\s*/g, ''));
   w.jn = new Set(w.ja.map(normMeaning).filter(Boolean));
   w.body = splitArt(baseNorm(w.it)).body;
   w.search = baseNorm(w.it) + ' ' + w.alt.map(baseNorm).join(' ') + ' ' + w.ja.join(' ').toLowerCase();
@@ -3644,7 +3680,7 @@ function rebuild(){
 }
 function bySeq(list){ return list.slice().sort((a, b) => a.seq - b.seq); }
 function saveUserWords(){
-  return LS.set('itv:userWords', userWords.map(({jn, body, search, ord, ukey, seq, ...r}) => r));
+  return LS.set('itv:userWords', userWords.map(({jn, body, search, ord, ukey, seq, jaLines, ...r}) => r));
 }
 rebuild();
 
@@ -3865,6 +3901,35 @@ function spkBtn(text){ return `<button class="speak" data-say="${esc(text)}" ari
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function shuffle(a){ a = a.slice(); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function jaText(w, n){ return w.ja.slice(0, n || w.ja.length).join('、'); }
+const PAREN_RE = /（[^）]*）|\([^)]*\)/g;
+/* 日本語訳の大きな表示。訳語ごとに改行しないかたまりにして、括弧書きは小さく下の行に置く */
+function jaBig(w){
+  const n = w.jaLines.length;
+  return `<div class="ja-big jfit">${w.jaLines.map((m, k) => {
+    const t = m.trim();
+    const pars = t.match(PAREN_RE) || [];
+    let main = t.replace(PAREN_RE, '').trim();
+    let note = pars.join('');
+    if(!main){ main = note; note = ''; }
+    const sep = k < n - 1 ? '、' : '';
+    const noteHtml = note ? `<span class="jn">${esc(note)}</span>` : '';
+    const lines = main.split(/\s*\n\s*/).filter(Boolean);
+    return `<span class="jc">${lines.map((l, i) => `<span class="jm">${esc(l)}${i === lines.length - 1 ? sep : ''}</span>`).join('')}${noteHtml}</span>`;
+  }).join('')}</div>`;
+}
+/* はみ出す訳語だけ、その訳語の文字を縮めて1行に収める */
+function fitJa(root){
+  (root || document).querySelectorAll('.jfit').forEach(box => {
+    const cw = box.clientWidth; if(!cw) return;
+    box.querySelectorAll('.jc').forEach(c => {
+      c.style.fontSize = '';
+      const w = c.scrollWidth;
+      if(w > cw) c.style.fontSize = Math.floor(cw / w * 1000) / 10 + '%';
+    });
+  });
+}
+window.addEventListener('resize', () => fitJa(main));
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitJa(main));
 function fmt(n){ return Number(n).toLocaleString('ja-JP'); }
 function badges(w){
   const b = [];
@@ -3943,32 +4008,77 @@ function goBack(from){
   if(from === 'level') return renderLevel(curLevel);
   return renderHome();
 }
-/* ユニットの1行。タップで3つの学習ボタンが開く */
+/* ユニットの1行。タップで学習方法を選ぶシートが下から出る */
 function unitRow(u, scope){
-  const p = unitProgress(u); const id = scope + '|' + u.key; const open = openUnit === id;
-  return `<div class="urow${open ? ' open' : ''}">
-    <button class="uline" data-unit="${esc(id)}" aria-expanded="${open}">
+  const p = unitProgress(u);
+  return `<div class="urow">
+    <button class="uline" data-unit="${esc(u.key)}" aria-haspopup="dialog">
       <span class="un">${pad2(u.idx)}</span>
       <span class="uname">${esc(u.name)}</span>
       <span class="ucount">${p.m === p.t ? '<span class="udone">完了</span>' : `${p.m}/${p.t}`}</span>
       <span class="meter"><i class="m" style="width:${p.m/p.t*100}%"></i><i class="l" style="width:${p.l/p.t*100}%"></i></span>
     </button>
-    ${open ? `<div class="ustart">
+  </div>`;
+}
+function bindUnitRows(){
+  main.querySelectorAll('[data-unit]').forEach(b => b.onclick = () => { const u = unitByKey.get(b.dataset.unit); if(u) openUnitSheet(u, b); });
+}
+let sheetReturn = null;
+/* 画面中央に出すダイアログ（ユニットの学習方法・確認） */
+function closeUnitSheet(){
+  const bd = document.getElementById('ubackdrop'); if(!bd) return;
+  bd.classList.remove('show');
+  document.removeEventListener('keydown', sheetKey, true);
+  setTimeout(() => bd.remove(), 200);
+  if(sheetReturn && document.body.contains(sheetReturn)) sheetReturn.focus();
+  sheetReturn = null;
+}
+function sheetKey(e){ if(e.key === 'Escape'){ e.stopPropagation(); closeUnitSheet(); } }
+function openDialog(html, from, role){
+  closeUnitSheet();
+  const bd = document.createElement('div');
+  bd.id = 'ubackdrop'; bd.className = 'ubackdrop';
+  bd.innerHTML = `<div class="usheet" role="${role || 'dialog'}" aria-modal="true" aria-labelledby="usheetTitle">${html}</div>`;
+  document.body.appendChild(bd);
+  sheetReturn = from || null;
+  bd.onclick = e => { if(e.target === bd) closeUnitSheet(); };
+  bd.querySelectorAll('[data-sheet-close]').forEach(x => x.onclick = closeUnitSheet);
+  document.addEventListener('keydown', sheetKey, true);
+  requestAnimationFrame(() => bd.classList.add('show'));
+  return bd;
+}
+function openUnitSheet(u, from){
+  const p = unitProgress(u);
+  const bd = openDialog(`
+    <div class="usheet-head">
+      <span class="un">${pad2(u.idx)}</span>
+      <b id="usheetTitle">${esc(u.name)}</b>
+      <button class="btn ghost small" data-sheet-close>閉じる</button>
+    </div>
+    <div class="usheet-prog"><span class="muted small">Lv.${u.lv}　${p.m} / ${p.t}語が定着</span>
+      <span class="meter"><i class="m" style="width:${p.m/p.t*100}%"></i><i class="l" style="width:${p.l/p.t*100}%"></i></span></div>
+    <div class="ustart">
       <button class="btn" data-ustart="flash">フラッシュ<wbr>カード</button>
       <button class="btn" data-ustart="choice">4択</button>
       <button class="btn ink" data-ustart="type">テスト</button>
-    </div>` : ''}
-  </div>`;
+    </div>`, from);
+  bd.querySelectorAll('[data-ustart]').forEach(b => b.onclick = () => { const m = b.dataset.ustart; sheetReturn = null; closeUnitSheet(); startUnit(m, u); });
+  requestAnimationFrame(() => bd.querySelector('[data-ustart="flash"]').focus({preventScroll:true}));
 }
-function bindUnitRows(rerender){
-  main.querySelectorAll('[data-unit]').forEach(b => b.onclick = () => {
-    openUnit = openUnit === b.dataset.unit ? null : b.dataset.unit; keepScroll(rerender);
-  });
-  main.querySelectorAll('[data-ustart]').forEach(b => b.onclick = () => {
-    const u = unitByKey.get((openUnit || '').split('|')[1]); if(u) startUnit(b.dataset.ustart, u);
-  });
+/* テストで空欄のまま答えたとき */
+function confirmGiveUp(){
+  const inp = document.getElementById('ans');
+  const bd = openDialog(`
+    <b id="usheetTitle" class="dlg-title">答えを表示しますか？</b>
+    <p class="muted small" style="margin:0">何も入力されていません。答えを見ると、この問題は不正解として記録されます。</p>
+    <div class="dlg-actions">
+      <button class="btn" data-sheet-close>入力に戻る</button>
+      <button class="btn ink" data-giveup>答えを見る</button>
+    </div>`, inp, 'alertdialog');
+  bd.querySelector('[data-giveup]').onclick = () => { sheetReturn = null; closeUnitSheet(); if(S && S.mode === 'type' && !S.answered) submitType(true); };
+  requestAnimationFrame(() => bd.querySelector('[data-giveup]').focus({preventScroll:true}));
 }
-function startUnit(mode, u){ start(mode, u.words.slice(), {unit: u.key}); }
+function startUnit(mode, u){ start(mode, settings.unitShuffle ? shuffle(u.words) : u.words.slice(), {unit: u.key}); }
 function nextUnit(u){
   return UNITS.filter(x => x.lv === u.lv && x.idx > u.idx).find(x => !(settings.skipDone && unitDone(x))) || null;
 }
@@ -4073,7 +4183,7 @@ function renderLevel(n){
   `;
   document.getElementById('backLevels').onclick = () => { window.scrollTo(0, 0); renderHome(); };
   document.getElementById('lvTest').onclick = () => start('type', limit(shuffle(ws)));
-  bindUnitRows(() => renderLevel(n));
+  bindUnitRows();
 }
 
 /* ------------------------------------------------------------------ */
@@ -4204,7 +4314,7 @@ function renderFlash(){
   const w = S.list[S.i]; const it2ja = settings.dir === 'it2ja';
   const front = it2ja
     ? `<div class="row" style="justify-content:center;gap:10px"><div class="it" lang="it">${esc(w.it)}</div>${spkBtn(w.it)}</div>${badges(w)}`
-    : `<div class="ja-big">${esc(jaText(w))}</div>${badges(w)}`;
+    : `${jaBig(w)}${badges(w)}`;
   main.innerHTML = sessHead() + `
     <div class="sheet flash" id="card">
       <div class="front">${front}
@@ -4230,6 +4340,7 @@ function renderFlash(){
     document.getElementById('yes').onclick = () => flashJudge(true);
   }
   if(it2ja && !S.flipped) autoSpeak(w.it);
+  fitJa(main);
 }
 function flip(){ if(S.flipped) return; S.flipped = true; renderFlash(); bindQuit(); }
 function flashJudge(ok){ const w = S.list[S.i]; grade(w.id, 'flash', ok); S.results.push({w, ok}); next(); }
@@ -4264,7 +4375,7 @@ function renderChoice(){
   if(!S.opts) S.opts = shuffle([w, ...distractors(w, it2ja ? 'ja' : 'it')]);
   const q = it2ja
     ? `<div class="row" style="justify-content:center;gap:10px"><div class="it" lang="it">${esc(w.it)}</div>${spkBtn(w.it)}</div>${badges(w)}`
-    : `<div class="ja-big">${esc(jaText(w))}</div>${badges(w)}`;
+    : `${jaBig(w)}${badges(w)}`;
   main.innerHTML = sessHead() + `
     <div class="sheet"><div class="question">${q}</div></div>
     <div class="choices">${S.opts.map((o, k) => {
@@ -4280,6 +4391,7 @@ function renderChoice(){
   `;
   main.querySelectorAll('[data-k]').forEach(b => b.onclick = () => choose(Number(b.dataset.k)));
   if(S.answered) document.getElementById('nextQ').onclick = next;
+  fitJa(main);
 }
 function choose(k){
   if(S.answered) return;
@@ -4292,24 +4404,19 @@ function choose(k){
 }
 
 /* 一問一答 */
-const ACCENTS = ['à','è','é','ì','ò','ù'];
+const ACCENTS = ['à','è','é','ì','ò','ù',"'"];
 function renderType(){
   const w = S.list[S.i];
   main.innerHTML = sessHead() + `
     <div class="sheet">
-      <div class="question"><div class="ja-big">${esc(jaText(w))}</div>${badges(w)}
+      <div class="question">${jaBig(w)}${badges(w)}
         <div class="hint" id="hintTxt" lang="it">${S.hint ? esc(S.hint) : ''}</div>
       </div>
       <div class="answer-box">
         <input type="text" id="ans" lang="it" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="イタリア語で入力" aria-label="答え">
         <button class="btn ink" id="check">答える</button>
       </div>
-      <div class="accents" id="accents">${ACCENTS.map(a => `<button type="button" data-acc="${a}" aria-label="${a} を入力">${a}</button>`).join('')}</div>
-      <div class="row" style="margin-top:8px;gap:6px">
-        <button class="btn ghost small" id="hintBtn">ヒント</button>
-        <button class="btn ghost small" id="giveup">わからない</button>
-        <span class="muted small" style="margin-left:auto">${settings.artMode ? 'アクセント記号は省略しても正解。冠詞も判定します' : 'アクセント記号と冠詞は省略しても正解'}</span>
-      </div>
+      <div class="accents" id="accents">${ACCENTS.map(a => `<button type="button" data-acc="${esc(a)}" aria-label="${a === "'" ? 'アポストロフィ' : a} を入力">${a === "'" ? '’' : a}</button>`).join('')}<button type="button" class="hintbtn" id="hintBtn">ヒント</button></div>
       <div id="fb"></div>
     </div>
   `;
@@ -4317,7 +4424,6 @@ function renderType(){
   inp.focus();
   inp.onkeydown = e => { if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); e.stopPropagation(); if(S.answered) next(); else submitType(); } };
   document.getElementById('check').onclick = () => S.answered ? next() : submitType();
-  document.getElementById('giveup').onclick = () => { if(!S.answered) submitType(true); };
   document.getElementById('hintBtn').onclick = () => {
     if(S.answered) return;
     const {art, core} = leadArticle(clean(w.it, true));
@@ -4330,17 +4436,23 @@ function renderType(){
     b.onpointerdown = e => e.preventDefault();
     b.onclick = () => {
       if(inp.readOnly) return;
-      const s = inp.selectionStart ?? inp.value.length, en = inp.selectionEnd ?? inp.value.length;
-      inp.setRangeText(b.dataset.acc, s, en, 'end'); inp.focus();
+      /* カーソル位置に入れる（扱えない環境では末尾に足す） */
+      try{
+        const s = inp.selectionStart, en = inp.selectionEnd;
+        if(s == null) throw 0;
+        inp.setRangeText(b.dataset.acc, s, en, 'end');
+      }catch(e){ inp.value += b.dataset.acc; }
+      inp.focus();
     };
   });
+  fitJa(main);
 }
 function submitType(giveup){
   const w = S.list[S.i];
   const inp = document.getElementById('ans');
   const fb = document.getElementById('fb');
   const res = giveup ? {result:'ng'} : judge(inp.value, w);
-  if(res.result === 'empty'){ inp.focus(); return; }
+  if(res.result === 'empty'){ confirmGiveUp(); return; }
   if(res.result === 'close' && !S.retry){
     S.retry = true;
     inp.classList.add('close');
@@ -4575,7 +4687,9 @@ function renderSettings(msg){
       </select></label></div>
     <h2>ユニット学習</h2>
     <label class="toggle"><input type="checkbox" id="skipDone" ${settings.skipDone ? 'checked' : ''}>
-      <span><b>定着済みのユニットをスキップ</b><span class="muted small">学習後の「次のユニットへ」で、すべての語が定着したユニットを飛ばします。</span></span></label>
+      <span><b>定着済みのユニットをスキップする</b><span class="muted small">学習後の「次のユニットへ」で、すべての語が定着したユニットを飛ばします。</span></span></label>
+    <label class="toggle"><input type="checkbox" id="unitShuffle" ${settings.unitShuffle ? 'checked' : ''}>
+      <span><b>ユニット別の出題をランダムにする</b><span class="muted small">ユニットで学習するとき、収録順ではなくランダムな順で出題します。</span></span></label>
     <h2>テスト</h2>
     <label class="toggle"><input type="checkbox" id="artMode" ${settings.artMode ? 'checked' : ''}>
       <span><b>冠詞も判定する</b><span class="muted small">オンにすると il / la / l' などの冠詞が違うときは不正解になります。名詞の性を覚えたいときに。オフのときは冠詞が抜けても正解にして、正しい形を表示します。</span></span></label>
@@ -4625,6 +4739,7 @@ function renderSettings(msg){
   `;
   updateVoiceNotes();
   document.getElementById('skipDone').onchange = e => { settings.skipDone = e.target.checked; saveSettings(); };
+  document.getElementById('unitShuffle').onchange = e => { settings.unitShuffle = e.target.checked; saveSettings(); };
   document.getElementById('setDir').onchange = e => { settings.dir = e.target.value; saveSettings(); };
   document.getElementById('artMode').onchange = e => { settings.artMode = e.target.checked; saveSettings(); };
   document.getElementById('autoSpeak').onchange = e => { settings.autoSpeak = e.target.checked; saveSettings(); };
