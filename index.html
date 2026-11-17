@@ -80,7 +80,7 @@ p{margin:0 0 10px}
 
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .opts label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
-select,input[type=text],textarea{background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+select,input[type=text],input[type=password],textarea{background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
 
 .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:6px}
 .mode{background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:left}
@@ -3511,9 +3511,10 @@ const INTERVALS = [1, 1, 3, 7, 14, 30, 60, 120];
 /* 保存                                                                */
 /* ------------------------------------------------------------------ */
 let storageOK = true;
+let dataHook = null;   // 学習記録を保存したときに呼ぶ（GitHub への保存）
 const LS = {
   get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ storageOK = false; return false; } },
+  set(k, v){ let ok = true; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ storageOK = false; ok = false; } if(dataHook) dataHook(k); return ok; },
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
 
@@ -4110,6 +4111,7 @@ function renderHome(){
 
   main.innerHTML = `
     ${!storageOK ? `<div class="notice">このブラウザでは学習記録を保存できません。ページを閉じると記録が消えます。</div>` : ''}
+    ${syncNoticeHtml()}
     <div data-voice-note="home"></div>
     <div class="stats">
       <div class="stat"><b>${tl.n}</b><span>今日解いた数</span></div>
@@ -4144,6 +4146,7 @@ function renderHome(){
     <button class="mode" id="goRandom" style="width:100%"><b>ユニットを選んでランダムに出題</b><span>レベルをまたいで、選んだユニットの語をまぜて出題します</span></button>
   `;
   updateVoiceNotes();
+  bindSyncOpen();
   main.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { openUnit = null; window.scrollTo(0, 0); renderLevel(Number(b.dataset.lv)); });
   document.getElementById('goRandom').onclick = () => { window.scrollTo(0, 0); renderRandom(); };
   main.querySelectorAll('[data-review]').forEach(b => b.onclick = () => start(b.dataset.review, bySeq(limit(dueWords()))));
@@ -4679,6 +4682,7 @@ function renderSettings(msg){
   const overB = userWords.filter(w => BUILTIN_IDS.has(w.id)).length;
   main.innerHTML = `
     ${msg || ''}
+    ${syncSettingsHtml()}
     <h2>カードと4択の向き</h2>
     <div class="opts"><label>ユニット学習・ランダム出題の両方に使います
       <select id="setDir">
@@ -4738,6 +4742,7 @@ function renderSettings(msg){
     <div id="resetConfirm"></div>
   `;
   updateVoiceNotes();
+  bindSyncSettings();
   document.getElementById('skipDone').onchange = e => { settings.skipDone = e.target.checked; saveSettings(); };
   document.getElementById('unitShuffle').onchange = e => { settings.unitShuffle = e.target.checked; saveSettings(); };
   document.getElementById('setDir').onchange = e => { settings.dir = e.target.value; saveSettings(); };
@@ -4768,11 +4773,11 @@ function renderSettings(msg){
   document.getElementById('resetProg').onclick = () => askReset(
     'すべての学習記録（定着・復習の予定・解答数の記録）を消します。元に戻せません。',
     '学習記録を消す',
-    () => { prog = {}; logd = {}; saveProg(); saveLog(); renderSettings('<div class="notice">学習記録を消しました。</div>'); });
+    () => { Sync.bump('P'); prog = {}; logd = {}; saveProg(); saveLog(); renderSettings('<div class="notice">学習記録を消しました。</div>'); });
   document.getElementById('resetData').onclick = () => askReset(
     '自分で追加した語をすべて消します。内蔵データと学習記録は残ります。',
     '追加した語を消す',
-    () => { userWords = []; saveUserWords(); rebuild(); renderSettings('<div class="notice">自分で追加した語を消しました。</div>'); });
+    () => { Sync.bump('W'); userWords = []; saveUserWords(); rebuild(); renderSettings('<div class="notice">自分で追加した語を消しました。</div>'); });
 }
 function importTexts(texts, mode, names){
   let added = []; const errs = [];
@@ -4788,11 +4793,393 @@ function importTexts(texts, mode, names){
   let upd = 0, overB = 0;
   added.forEach(w => { if(map.has(w.id)) upd++; else if(BUILTIN_IDS.has(w.id)) overB++; map.set(w.id, w); });
   userWords = [...map.values()];
+  if(mode === 'replace') Sync.bump('W');
   const saved = saveUserWords();
   rebuild();
   renderSettings(`<div class="notice">${added.length}行を読み込みました${upd ? `（うち${upd}語は追加済みの語を上書き）` : ''}${overB ? `。${overB}語は内蔵語を上書きしています` : ''}${skipped ? `。統合済みの重複語 ${skipped}行は読み飛ばしました` : ''}。合計${fmt(words.length)}語。
     ${saved ? '' : '<br>ブラウザに保存できなかったため、ページを閉じると消えます。'}
     ${errs.length ? `<ul class="errors">${errs.map(e => `<li>${esc(e)}</li>`).join('')}</ul>` : ''}</div>`);
+}
+
+/* ------------------------------------------------------------------ */
+/* GitHub への保存（Gist 同期）                                         */
+/*  学習記録は人ごとに別々の非公開 Gist（parole-<名前>.json）へ保存する。 */
+/*  トークンと名前はこの端末に覚えておき、消えたときだけ聞き直す。        */
+/*  端末の記録と Gist の記録は語ごとに新しいほうを残して合わせるので、    */
+/*  どちらかを丸ごと上書きすることはない（リセットしたときだけ上書き）。  */
+/* ------------------------------------------------------------------ */
+const PEOPLE = {tanoji:'たのじ', nanoji:'なのじ'};
+const SYNC_KEYS = new Set(['itv:prog', 'itv:log', 'itv:userWords', 'itv:settings']);
+const DEVICE_SETTINGS = ['voiceURI', 'voiceNoteHidden'];   // 声は端末ごとに違うので同期しない
+const Sync = (() => {
+  let cfg = LS.get('itv:sync', null);                      // {token, name, gistId, lastSync}
+  let meta = Object.assign({epP:0, epW:0, setAt:0, dirty:false}, LS.get('itv:meta', {}));
+  let timer = null, busy = null, again = false, applying = false, lastPull = 0;
+  let state = 'idle';                                      // idle | syncing | error | auth
+  const listeners = new Set();
+
+  const fileOf = name => `parole-${name}.json`;
+  function saveCfg(){ if(cfg) LS.set('itv:sync', cfg); else LS.del('itv:sync'); }
+  function saveMeta(){ LS.set('itv:meta', meta); }
+  function setState(s){ state = s; listeners.forEach(f => { try{ f(); }catch(e){} }); }
+  function fail(code, msg){ return Object.assign(new Error(msg || code), {code}); }
+
+  /* ---- GitHub API ---- */
+  async function gh(path, opt, token){
+    opt = opt || {};
+    let res;
+    try{
+      res = await fetch('https://api.github.com' + path, {
+        method: opt.method || 'GET', cache: 'no-store', body: opt.body,
+        headers: Object.assign({
+          'Accept': 'application/vnd.github+json',
+          'Authorization': 'Bearer ' + (token || (cfg && cfg.token)),
+          'X-GitHub-Api-Version': '2022-11-28'
+        }, opt.body ? {'Content-Type': 'application/json'} : {})
+      });
+    }catch(e){ throw fail('net'); }
+    if(res.status === 401) throw fail('auth');
+    if(res.status === 404) throw fail('notfound');
+    if(res.status === 403 || res.status === 429) throw fail('limit');
+    if(!res.ok) throw fail('http', 'GitHub の応答 ' + res.status);
+    return res.json();
+  }
+  async function findGist(token, name){
+    for(let page = 1; page <= 10; page++){
+      const list = await gh(`/gists?per_page=100&page=${page}`, null, token);
+      const g = list.find(x => x.files && x.files[fileOf(name)]);
+      if(g) return g.id;
+      if(list.length < 100) return null;
+    }
+    return null;
+  }
+  async function readGist(id, name, token){
+    const g = await gh(`/gists/${id}`, null, token);
+    const f = g.files && g.files[fileOf(name)];
+    if(!f) return null;
+    let text = f.content;
+    if(f.truncated){
+      try{ text = await (await fetch(f.raw_url, {cache:'no-store'})).text(); }catch(e){ throw fail('net'); }
+    }
+    try{ return JSON.parse(text); }catch(e){ return null; }
+  }
+  async function writeGist(id, name, data, token){
+    await gh(`/gists/${id}`, {method:'PATCH', body: JSON.stringify({files: {[fileOf(name)]: {content: JSON.stringify(data)}}})}, token);
+  }
+  async function createGist(name, data, token){
+    try{
+      const g = await gh('/gists', {method:'POST', body: JSON.stringify({
+        description: `Parole 学習記録（${PEOPLE[name]}）`, public: false,
+        files: {[fileOf(name)]: {content: JSON.stringify(data)}}
+      })}, token);
+      return g.id;
+    }catch(e){ throw e.code === 'notfound' || e.code === 'limit' ? fail('scope') : e; }
+  }
+
+  /* ---- 記録のまとめ・合わせ方 ---- */
+  function plainWords(){ return userWords.map(({jn, body, search, ord, ukey, seq, jaLines, ...r}) => r); }
+  function plainSettings(){ const s = Object.assign({}, settings); DEVICE_SETTINGS.forEach(k => delete s[k]); return s; }
+  function localData(){
+    return {v:1, name: cfg && cfg.name, savedAt: Date.now(), epP: meta.epP, epW: meta.epW, setAt: meta.setAt,
+            prog, log: logd, words: plainWords(), settings: plainSettings()};
+  }
+  function emptyData(){ return {v:1, epP:0, epW:0, setAt:0, prog:{}, log:{}, words:[], settings: plainSettings()}; }
+  function hasLocal(){ return Object.keys(prog).length > 0 || userWords.length > 0; }
+  /* 語ごと・日ごとに新しいほうを残す。リセットした側（ep が大きい側）は丸ごと優先 */
+  function merge(L, R){
+    const o = {v:1, epP:L.epP||0, epW:L.epW||0, setAt:L.setAt||0};
+    const rp = R.epP || 0, lp = L.epP || 0;
+    if(rp !== lp){ const W = rp > lp ? R : L; o.prog = W.prog || {}; o.log = W.log || {}; o.epP = Math.max(rp, lp); }
+    else{
+      o.prog = Object.assign({}, R.prog || {});
+      for(const id in (L.prog || {})){ const a = L.prog[id], b = o.prog[id]; if(!b || (a.t || 0) >= (b.t || 0)) o.prog[id] = a; }
+      o.log = Object.assign({}, R.log || {});
+      for(const d in (L.log || {})){ const a = L.log[d], b = o.log[d]; if(!b || (a.n || 0) >= (b.n || 0)) o.log[d] = a; }
+    }
+    const rw = R.epW || 0, lw = L.epW || 0;
+    if(rw !== lw){ o.words = (rw > lw ? R : L).words || []; o.epW = Math.max(rw, lw); }
+    else{ const m = new Map((R.words || []).map(w => [w.id, w])); (L.words || []).forEach(w => m.set(w.id, w)); o.words = [...m.values()]; }
+    if((R.setAt || 0) > (L.setAt || 0)){ o.settings = R.settings || {}; o.setAt = R.setAt; } else o.settings = L.settings || {};
+    return o;
+  }
+  function sameMap(a, b){
+    a = a || {}; b = b || {};
+    const ka = Object.keys(a); if(ka.length !== Object.keys(b).length) return false;
+    return ka.every(k => JSON.stringify(a[k]) === JSON.stringify(b[k]));
+  }
+  function sameWords(a, b){
+    a = a || []; b = b || []; if(a.length !== b.length) return false;
+    const m = new Map(b.map(w => [w.id, JSON.stringify(w)]));
+    return a.every(w => m.get(w.id) === JSON.stringify(w));
+  }
+  function same(a, b){
+    return (a.epP||0) === (b.epP||0) && (a.epW||0) === (b.epW||0) && (a.setAt||0) === (b.setAt||0)
+      && sameMap(a.prog, b.prog) && sameMap(a.log, b.log) && sameWords(a.words, b.words) && sameMap(a.settings, b.settings);
+  }
+  /* 合わせた結果をこの端末に入れる */
+  function apply(d){
+    const before = localData();
+    applying = true;
+    try{
+      if(!sameMap(before.prog, d.prog) || !sameMap(before.log, d.log)){ prog = d.prog || {}; logd = d.log || {}; saveProg(); saveLog(); }
+      if(!sameWords(before.words, d.words)){ userWords = (d.words || []).map(w => Object.assign({}, w)); saveUserWords(); rebuild(); }
+      if(!sameMap(before.settings, d.settings)){
+        const keep = {}; DEVICE_SETTINGS.forEach(k => { if(k in settings) keep[k] = settings[k]; });
+        settings = Object.assign({}, settings, d.settings || {}, keep);
+        if(!Array.isArray(settings.units)) settings.units = [];
+        saveSettings();
+      }
+      meta.epP = d.epP || 0; meta.epW = d.epW || 0; meta.setAt = d.setAt || 0; saveMeta();
+    }finally{ applying = false; }
+    if(!same(before, d)) refresh();
+  }
+  function refresh(){
+    if(S || document.getElementById('ubackdrop')) return;
+    if(view === 'home') keepScroll(renderHome);
+    else if(view === 'stats') keepScroll(renderStats);
+    else if(view === 'list') keepScroll(renderList);
+    else if(view === 'settings') keepScroll(() => renderSettings());
+  }
+
+  /* ---- 同期 ---- */
+  function schedule(ms){ clearTimeout(timer); timer = setTimeout(syncNow, ms == null ? 4000 : ms); }
+  function syncNow(){
+    if(!cfg || !cfg.token) return Promise.resolve();
+    if(busy){ again = true; return busy; }
+    clearTimeout(timer);
+    busy = (async () => {
+      setState('syncing');
+      try{
+        if(!cfg.gistId) cfg.gistId = await findGist(cfg.token, cfg.name);
+        let remote = null;
+        if(cfg.gistId){
+          try{ remote = await readGist(cfg.gistId, cfg.name, cfg.token); }
+          catch(e){ if(e.code === 'notfound'){ cfg.gistId = null; } else throw e; }
+        }
+        const local = localData();
+        const out = remote ? merge(local, remote) : local;
+        apply(out);
+        const payload = Object.assign(localData(), {savedAt: Date.now()});
+        if(!cfg.gistId) cfg.gistId = await createGist(cfg.name, payload, cfg.token);
+        else if(!remote || !same(payload, remote)) await writeGist(cfg.gistId, cfg.name, payload, cfg.token);
+        meta.dirty = false; saveMeta();
+        cfg.lastSync = Date.now(); saveCfg(); lastPull = Date.now();
+        setState('idle');
+      }catch(e){
+        saveCfg();
+        setState(e.code === 'auth' ? 'auth' : 'error');
+        if(e.code === 'auth') refresh();
+      }finally{
+        busy = null;
+        if(again){ again = false; schedule(1500); }
+      }
+    })();
+    return busy;
+  }
+  /* LS.set から呼ばれる：学習記録が変わったら少し待ってまとめて保存 */
+  function onSaved(k){
+    if(applying || !SYNC_KEYS.has(k)) return;
+    if(k === 'itv:settings') meta.setAt = Date.now();
+    meta.dirty = true; saveMeta();
+    if(cfg && cfg.token && state !== 'auth') schedule();
+  }
+  /* リセットしたときは、合わせずにこの端末の内容で上書きする */
+  function bump(kind){ if(kind === 'P') meta.epP = Math.max(meta.epP, Date.now()); else meta.epW = Math.max(meta.epW, Date.now()); saveMeta(); }
+
+  /* ---- 接続・切り替え ---- */
+  function summary(d){
+    if(!d) return 'まだ記録がありません';
+    const p = d.prog || {}; const n = Object.keys(p).length;
+    let a = 0; for(const k in (d.log || {})) a += d.log[k].n || 0;
+    let last = 0; for(const k in p) last = Math.max(last, p[k].t || 0);
+    if(!n && !a && !(d.words || []).length) return 'まだ記録がありません';
+    return `学習した語 ${fmt(n)}、解答 ${fmt(a)}問` + (last ? `、最後の学習 ${md(dayOf(last))}` : '') + ((d.words || []).length ? `、追加した語 ${fmt(d.words.length)}` : '');
+  }
+  async function inspect(token, name){
+    const gistId = await findGist(token, name);
+    const data = gistId ? await readGist(gistId, name, token) : null;
+    return {gistId, data};
+  }
+  /* mode: merge（この端末の記録と合わせる）/ replace（その人の記録に入れ替える） */
+  async function connect(token, name, found, mode){
+    if(mode === 'replace'){
+      apply(found.data ? merge(emptyData(), found.data) : emptyData());
+    }
+    cfg = {token, name, gistId: found.gistId, lastSync: 0}; saveCfg();
+    meta.dirty = true; saveMeta();
+    await syncNow();
+    if(state !== 'idle') throw fail(state === 'auth' ? 'auth' : 'net');
+  }
+  async function switchTo(name){
+    if(meta.dirty || state !== 'idle') await syncNow();
+    if(state !== 'idle') throw fail(state === 'auth' ? 'auth' : 'net');
+    const found = await inspect(cfg.token, name);
+    await connect(cfg.token, name, found, 'replace');
+  }
+  function disconnect(){ clearTimeout(timer); cfg = null; saveCfg(); setState('idle'); }
+
+  function statusText(){
+    if(!cfg) return '';
+    if(state === 'syncing') return '保存しています…';
+    if(state === 'auth') return 'トークンが使えなくなりました。入れ直してください。';
+    if(state === 'error') return 'GitHub に接続できませんでした。変更はこの端末に残っていて、次につながったときに保存します。';
+    if(meta.dirty) return 'まもなく保存します';
+    if(!cfg.lastSync) return '';
+    const d = new Date(cfg.lastSync);
+    return `最後に保存：${dayLabel(dayOf(cfg.lastSync))} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function init(){
+    try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); }catch(e){}
+    window.addEventListener('online', () => syncNow());
+    document.addEventListener('visibilitychange', () => {
+      if(!cfg) return;
+      if(document.visibilityState === 'hidden'){ if(meta.dirty) syncNow(); }
+      else if(Date.now() - lastPull > 30000) syncNow();
+    });
+    if(cfg && cfg.token) syncNow();
+    else if(!hasLocal()) openSyncDialog('restore');
+  }
+
+  return {init, syncNow, onSaved, bump, summary, inspect, connect, switchTo, disconnect, hasLocal, statusText, localData,
+    cfg: () => cfg, state: () => state, dirty: () => meta.dirty,
+    on: f => listeners.add(f), off: f => listeners.delete(f)};
+})();
+dataHook = Sync.onSaved;
+
+const SYNC_ERR = {
+  auth: 'トークンが正しくありません。コピーし直して貼り付けてください。',
+  scope: 'このトークンには gist の権限がありません。トークンを作り直すときに「gist」にチェックを入れてください。',
+  net: 'GitHub に接続できませんでした。通信状況を確かめて、もう一度お試しください。',
+  limit: 'GitHub への接続が一時的に制限されています。しばらく待ってからお試しください。'
+};
+function syncErr(e){ return SYNC_ERR[e && e.code] || ('うまくいきませんでした（' + esc(e && e.message) + '）'); }
+
+/* 接続のダイアログ。why: restore（記録が見つからない）/ setup（設定から）/ auth（トークン切れ） */
+function openSyncDialog(why, from){
+  const c = Sync.cfg();
+  const pre = c ? c.name : '';
+  const lead = {
+    restore: 'この端末に学習記録が見つかりません。以前 GitHub に保存していた場合は、名前とトークンを入れると元に戻せます。初めて使うときも、ここで保存の設定ができます。',
+    setup: '名前を選んで、GitHub のトークンを貼り付けてください。記録は名前ごとに別々に保存され、相手の記録には触れません。',
+    auth: '保存に使っていたトークンが使えなくなりました。新しいトークンを貼り付けてください。'
+  }[why];
+  const bd = openDialog(`
+    <b class="dlg-title" id="usheetTitle">学習記録を GitHub に保存</b>
+    <p class="muted small" style="margin:0">${lead}</p>
+    <div class="vlist" role="radiogroup" aria-label="名前">
+      ${Object.entries(PEOPLE).map(([k, v]) => `<label class="vopt"><input type="radio" name="syncName" value="${k}" ${pre === k ? 'checked' : ''} ${why === 'auth' && pre !== k ? 'disabled' : ''}><span class="vname">${v}</span></label>`).join('')}
+    </div>
+    <label class="small muted" style="display:grid;gap:4px">GitHub のトークン
+      <input type="password" id="syncToken" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_ で始まる文字列">
+    </label>
+    <div id="syncMsg" class="small" aria-live="polite"></div>
+    <div class="dlg-actions"><button class="btn ghost" data-sheet-close>あとで</button><button class="btn ink" id="syncGo">次へ</button></div>`, from);
+  const sheet = bd.querySelector('.usheet');
+  const msg = t => { const m = sheet.querySelector('#syncMsg'); if(m) m.innerHTML = t ? `<span class="red">${t}</span>` : ''; };
+  sheet.querySelector('#syncGo').onclick = async () => {
+    const name = (sheet.querySelector('input[name=syncName]:checked') || {}).value;
+    const token = sheet.querySelector('#syncToken').value.trim();
+    if(!name){ msg('名前を選んでください。'); return; }
+    if(!token){ msg('トークンを貼り付けてください。'); return; }
+    const go = sheet.querySelector('#syncGo'); go.disabled = true; go.textContent = '確認しています…'; msg('');
+    let found;
+    try{ found = await Sync.inspect(token, name); }
+    catch(e){ go.disabled = false; go.textContent = '次へ'; msg(syncErr(e)); return; }
+    syncConfirmStep(sheet, token, name, found, why);
+  };
+}
+/* 2段目：中身を見せてから読み込む */
+function syncConfirmStep(sheet, token, name, found, why){
+  const who = PEOPLE[name];
+  const local = Sync.hasLocal(), remote = !!found.data;
+  const cur = Sync.cfg();
+  /* 別の人として使っていた端末なら、合わせずに入れ替える */
+  const replace = !local || (cur && cur.name && cur.name !== name);
+  let body, label;
+  if(remote && replace){
+    body = `<p>GitHub に保存されている${who}の記録をこの端末に読み込みます。</p><p class="notice" style="margin:0">${Sync.summary(found.data)}</p>`;
+    label = '読み込む';
+  }else if(remote){
+    body = `<p>この端末の記録と、GitHub に保存されている${who}の記録を合わせます。語ごとに新しいほうを残すので、どちらの記録も消えません。</p>
+      <p class="notice" style="margin:0">GitHub：${Sync.summary(found.data)}<br>この端末：${Sync.summary(Sync.localData())}</p>
+      <p class="muted small" style="margin:0">この端末の記録が${who}のものでない場合は、戻って名前を選び直してください。</p>`;
+    label = '合わせて保存';
+  }else{
+    body = `<p>${who}の記録はまだ GitHub にありません。${local ? 'この端末の記録を' : 'これからの記録を'}${who}として保存します。</p>
+      ${local ? `<p class="notice" style="margin:0">この端末：${Sync.summary(Sync.localData())}</p>` : ''}
+      <p class="muted small" style="margin:0">以前に保存したことがあるのに見つからない場合は、名前が違っていないか確かめてください。</p>`;
+    label = '保存を始める';
+  }
+  sheet.innerHTML = `<b class="dlg-title" id="usheetTitle">${who}の記録</b>${body}
+    <div id="syncMsg" class="small" aria-live="polite"></div>
+    <div class="dlg-actions"><button class="btn ghost" id="syncBack">戻る</button><button class="btn ink" id="syncOk">${label}</button></div>`;
+  sheet.querySelector('#syncBack').onclick = () => { closeUnitSheet(); setTimeout(() => openSyncDialog(why), 220); };
+  sheet.querySelector('#syncOk').onclick = async () => {
+    const ok = sheet.querySelector('#syncOk'); ok.disabled = true; ok.textContent = '保存しています…';
+    try{
+      await Sync.connect(token, name, found, replace ? 'replace' : 'merge');
+      closeUnitSheet();
+      setTimeout(() => { if(!S) keepScroll(view === 'settings' ? () => renderSettings(`<div class="notice">${who}として GitHub に保存しました。これからは自動で保存されます。</div>`) : renderHome); }, 220);
+    }catch(e){
+      ok.disabled = false; ok.textContent = label;
+      sheet.querySelector('#syncMsg').innerHTML = `<span class="red">${syncErr(e)}</span>`;
+    }
+  };
+}
+/* ホームの案内：未設定・トークン切れのときだけ出す */
+function syncNoticeHtml(){
+  const c = Sync.cfg();
+  if(c && Sync.state() === 'auth') return `<div class="notice">GitHub への保存に使うトークンが使えなくなりました。<div class="row" style="margin-top:6px"><button class="btn ink" data-sync-open="auth">トークンを入れ直す</button></div></div>`;
+  if(!c && Sync.hasLocal()) return `<div class="notice">学習記録はこのブラウザにしか保存されていません。GitHub に保存しておくと、消えても元に戻せます。<div class="row" style="margin-top:6px"><button class="btn ink" data-sync-open="setup">GitHub への保存を設定</button></div></div>`;
+  return '';
+}
+function bindSyncOpen(){ main.querySelectorAll('[data-sync-open]').forEach(b => b.onclick = () => openSyncDialog(b.dataset.syncOpen, b)); }
+function syncSettingsHtml(){
+  const c = Sync.cfg();
+  if(!c) return `<h2>学習記録の保存</h2>
+    <p class="muted small">学習記録は今、このブラウザにしか保存されていません。GitHub に保存しておくと、ブラウザのデータが消えたときや機種変更のときに元に戻せます。</p>
+    <div class="row"><button class="btn ink" data-sync-open="setup">GitHub への保存を設定</button></div>`;
+  const other = c.name === 'tanoji' ? 'nanoji' : 'tanoji';
+  return `<h2>学習記録の保存</h2>
+    <p><b>${PEOPLE[c.name]}</b>として GitHub に自動で保存しています<br><span class="muted small" id="syncStatus">${Sync.statusText()}</span></p>
+    <div class="row">
+      <button class="btn" id="syncNowBtn">今すぐ保存</button>
+      ${Sync.state() === 'auth' ? '<button class="btn ink" data-sync-open="auth">トークンを入れ直す</button>' : ''}
+      <button class="btn" id="syncSwitch">${PEOPLE[other]}に切り替える</button>
+      <button class="btn ghost danger" id="syncOff">この端末の接続を解除</button>
+    </div>
+    <div id="syncConfirm"></div>`;
+}
+function bindSyncSettings(){
+  bindSyncOpen();
+  const c = Sync.cfg(); if(!c) return;
+  const upd = () => { const s = document.getElementById('syncStatus'); if(s) s.textContent = Sync.statusText(); else Sync.off(upd); };
+  Sync.on(upd);
+  document.getElementById('syncNowBtn').onclick = () => Sync.syncNow();
+  const box = document.getElementById('syncConfirm');
+  const other = c.name === 'tanoji' ? 'nanoji' : 'tanoji';
+  document.getElementById('syncSwitch').onclick = () => {
+    box.innerHTML = `<div class="notice" style="margin-top:12px"><p>${PEOPLE[other]}に切り替えますか？ 今の記録（${PEOPLE[c.name]}）を GitHub に保存してから、この端末を${PEOPLE[other]}の記録に入れ替えます。${PEOPLE[c.name]}の記録はそのまま残ります。</p>
+      <div class="row"><button class="btn ink" id="swYes">${PEOPLE[other]}に切り替える</button><button class="btn ghost" id="swNo">やめる</button></div><div id="swMsg" class="small"></div></div>`;
+    document.getElementById('swNo').onclick = () => { box.innerHTML = ''; };
+    document.getElementById('swYes').onclick = async () => {
+      const b = document.getElementById('swYes'); b.disabled = true; b.textContent = '切り替えています…';
+      try{ await Sync.switchTo(other); renderSettings(`<div class="notice">${PEOPLE[other]}の記録に切り替えました。</div>`); }
+      catch(e){ b.disabled = false; b.textContent = `${PEOPLE[other]}に切り替える`; document.getElementById('swMsg').innerHTML = `<span class="red">${syncErr(e)}</span>`; }
+    };
+    box.scrollIntoView({block:'nearest'});
+  };
+  document.getElementById('syncOff').onclick = () => {
+    box.innerHTML = `<div class="notice" style="margin-top:12px"><p>この端末でのGitHubへの保存をやめます。この端末の記録と GitHub の記録はどちらも残ります。もう一度つなぐにはトークンが必要です。</p>
+      <div class="row"><button class="btn danger" id="offYes">接続を解除</button><button class="btn ghost" id="offNo">やめる</button></div></div>`;
+    document.getElementById('offNo').onclick = () => { box.innerHTML = ''; };
+    document.getElementById('offYes').onclick = async () => {
+      if(Sync.dirty()) await Sync.syncNow();
+      Sync.disconnect(); renderSettings('<div class="notice">この端末の接続を解除しました。</div>');
+    };
+    box.scrollIntoView({block:'nearest'});
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -4883,6 +5270,7 @@ document.addEventListener('keydown', e => {
 })();
 
 renderHome();
+Sync.init();
 </script>
 </body>
 </html>
